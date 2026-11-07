@@ -9,7 +9,7 @@ Thank you for helping authors make better books. BOLD Writer is a native macOS p
 3. Use a branch from the current integration head. Keep commits focused and preserve unrelated changes.
 4. Run the relevant tests and a Release build. Include exact test counts and any skipped GUI verification in your pull request.
 
-The first clone should use `https://github.com/jorgenandrewjohnson-jpg/BOLDWriter.git`. Open `BOLDWriter.xcodeproj` in full Xcode for the native app, or use the commands below from the repository root. The public project website is [here](https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/).
+The first clone should use `https://github.com/jorgenandrewjohnson-jpg/BOLDWriter.git`. Open `BOLDWriter.xcodeproj` in full Xcode for the native app, or use the commands below from the repository root. The public project website is [here](https://authorsbebold.github.io/).
 
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer

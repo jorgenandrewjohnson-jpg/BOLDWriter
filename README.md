@@ -10,7 +10,7 @@
     <a href="Docs/OpenSourceStatus.md"><img src="https://img.shields.io/badge/status-active%20development-B56B42" alt="Active development"></a>
   </p>
 
-  <p><a href="https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/">Project website</a> · <a href="CONTRIBUTING.md">Start contributing</a> · <a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/issues">Find an issue</a> · <a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/discussions">Join the discussion</a> · <a href="Docs/Roadmap.md">Roadmap</a></p>
+  <p><a href="https://authorsbebold.github.io/">Project website</a> · <a href="CONTRIBUTING.md">Start contributing</a> · <a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/issues">Find an issue</a> · <a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/discussions">Join the discussion</a> · <a href="Docs/Roadmap.md">Roadmap</a></p>
 </div>
 
 > **Work in progress.** The source builds, but BOLD Writer is not yet a notarized, generally supported macOS release. Test with copies of your documents and check print output against your printer's requirements.
@@ -35,7 +35,7 @@ The [development status](Docs/OpenSourceStatus.md) separates implemented behavio
 
 <p align="center"><img src="site/assets/book-studio-synthetic.png" alt="Actual BOLD Writer 3D renderer output: an open hardcover with pages from a synthetic test manuscript" width="720"><br><small>Actual 3D render from a disposable synthetic manuscript. This is renderer evidence, not an interactive GUI acceptance claim.</small></p>
 
-The [project website](https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/) shows this proof and links to the current work. Genuine application-window screenshots will be added after a privacy-safe GUI capture with disposable content.
+The [project website](https://authorsbebold.github.io/) shows this proof and links to the current work. Genuine application-window screenshots will be added after a privacy-safe GUI capture with disposable content.
 
 ## Try the source on macOS
 
