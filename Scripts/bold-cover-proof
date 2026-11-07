@@ -1,0 +1,33 @@
+#!/bin/bash
+set -euo pipefail
+
+script_dir="$(
+    CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd
+)"
+
+root="$(
+    CDPATH= cd -- "$script_dir/.." && pwd
+)"
+
+temp_dir="$(
+    /usr/bin/mktemp -d "${TMPDIR:-/tmp/}bold-cover-proof.XXXXXXXX"
+)"
+
+cleanup() {
+    /bin/rm -f "$temp_dir/cover-proof"
+    /bin/rmdir "$temp_dir" 2>/dev/null || true
+}
+
+trap cleanup EXIT
+
+/usr/bin/xcrun swiftc -O \
+    "$root/Sources/BOLDWriter/DocumentCore/PrintCoverGeometry.swift" \
+    "$root/Sources/BOLDWriter/DocumentCore/PrintCoverProofPDF.swift" \
+    "$script_dir/bold-cover-proof-main.swift" \
+    -o "$temp_dir/cover-proof"
+
+status=0
+
+"$temp_dir/cover-proof" "$@" || status=$?
+
+exit "$status"

@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "d5520841f43bde3bb2e2bdb5c4e94e5c5574ff79",
+  "generator": "Scripts/qa/generate-fixtures.py",
+  "fixtures": [
+    {
+      "id": "synthetic-0001-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0001-page-import.rtf",
+      "nominalPageBreaks": 1,
+      "expectedPhysicalPages": null,
+      "characterCount": 581,
+      "utf16Length": 581,
+      "paragraphCount": 5,
+      "expectedSections": 1,
+      "textSHA256": "6b743cac20df934f16d5b5e98dba49977074443e68ff86f2d45ab5498642a713",
+      "fixtureSHA256": "9286e8efaa812a9c6d038b4563cf8b56d8b3df1dc9dfe6a8929ae2e2541ee8d6",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-0010-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0010-page-import.rtf",
+      "nominalPageBreaks": 10,
+      "expectedPhysicalPages": null,
+      "characterCount": 5832,
+      "utf16Length": 5832,
+      "paragraphCount": 59,
+      "expectedSections": 1,
+      "textSHA256": "edffde60253ecacf84c4081a9705dd7a400030f901140b8e5b53e4b9d22dd784",
+      "fixtureSHA256": "15693f77d8d04fd6e20f4af0c122658d894b94561ef8ce7d0aa799d9f24d3df2",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-0050-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0050-page-import.rtf",
+      "nominalPageBreaks": 50,
+      "expectedPhysicalPages": null,
+      "characterCount": 29243,
+      "utf16Length": 29243,
+      "paragraphCount": 299,
+      "expectedSections": 5,
+      "textSHA256": "92d935a1b02b13400351759bebf03104c80e6c0c0282419974bc6adb64923717",
+      "fixtureSHA256": "5c9ca679ce526b9e8916c13f11fbdcb5ce9b69ae9fc619f6495d37a080fef4f8",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-0100-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0100-page-import.rtf",
+      "nominalPageBreaks": 100,
+      "expectedPhysicalPages": null,
+      "characterCount": 58607,
+      "utf16Length": 58607,
+      "paragraphCount": 599,
+      "expectedSections": 10,
+      "textSHA256": "b52ed270e8b94c2b68e9e608d41c033f3f5ed1b4491f9a8f7e31caa43ec48e0d",
+      "fixtureSHA256": "49167f26121798287dfe281cb913bae367ddfa740446e2e7604bebc754c1494f",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-0391-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0391-page-import.rtf",
+      "nominalPageBreaks": 391,
+      "expectedPhysicalPages": null,
+      "characterCount": 229787,
+      "utf16Length": 229787,
+      "paragraphCount": 2345,
+      "expectedSections": 40,
+      "textSHA256": "108c4cc767a812d20e6e4d211f178f4a6b89c267a540086016ad5ca554853f6f",
+      "fixtureSHA256": "e7bccbce36459f82d02ab48ae9518880135f4128c88e5c54e71e1ef3a1e0f9e2",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-0500-page-import",
+      "path": "Audit/QA/fixtures/synthetic-0500-page-import.rtf",
+      "nominalPageBreaks": 500,
+      "expectedPhysicalPages": null,
+      "characterCount": 293906,
+      "utf16Length": 293906,
+      "paragraphCount": 2999,
+      "expectedSections": 50,
+      "textSHA256": "c49277f589b709499d64253d63edf90efd8a3519bc2da1f66749dbd23ac6de95",
+      "fixtureSHA256": "ccfb697b1563922c2d7ee1cdc4e7b45134665988dcaf129b5f59e31809d779dc",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    },
+    {
+      "id": "synthetic-1000-page-import",
+      "path": "Audit/QA/fixtures/synthetic-1000-page-import.rtf",
+      "nominalPageBreaks": 1000,
+      "expectedPhysicalPages": null,
+      "characterCount": 589034,
+      "utf16Length": 589034,
+      "paragraphCount": 5999,
+      "expectedSections": 100,
+      "textSHA256": "40c7e72dbdf26fc30225581fbc59c0745d9d3662c26b3266fe96848fecab8faa",
+      "fixtureSHA256": "21bb024692d9f204f8e3e51f4dcdfdf8412c55a67d55efd0baf00b5ef421f750",
+      "attributes": [
+        "Arial 15pt bold headings",
+        "Times New Roman 10pt italic markers",
+        "Times New Roman 11pt body",
+        "Arial 11pt underlined closing paragraphs",
+        "bullet field notes",
+        "explicit page breaks",
+        "section breaks every ten pages",
+        "Unicode",
+        "long paragraphs",
+        "short paragraphs"
+      ],
+      "notes": "Nominal page count comes from explicit RTF page breaks; actual rendered pagination must be measured independently."
+    }
+  ],
+  "docxRegressionFixtures": [
+    {
+      "id": "independent-floating-drawingml",
+      "path": "Audit/QA/fixtures/independent-floating-drawingml.docx",
+      "fixtureSHA256": "52f6b6a485fc4fad697da9a2794ce0a2fff54a50cc9feb387cb4b2e90b2ef670",
+      "imageSHA256": "0ced92978c3552c182a5a01ad01717bcc93cf1669be2c215b4f2012475b71783",
+      "paragraphText": [
+        "Before anchor",
+        "After anchor"
+      ],
+      "drawingType": "wp:anchor",
+      "wrapping": "wp:wrapSquare",
+      "sizeEMU": {
+        "cx": 1270000,
+        "cy": 635000
+      },
+      "expectedLimitation": "Importer converts floating position/wrapping to inline placement and must issue an explicit warning."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+BOLD Writer
+Version: 1.0.0
+Build: 1
+Initial implementation: 2026-09-15
+Minimum macOS: 14.0
+Target architectures: arm64, x86_64 (Universal)
+Signing: local/ad-hoc; not Developer ID signed; not notarized
+License: MIT
+
+Version number is an identifier, not a completeness claim.
+See README.md, ReleaseNotes.md, and the final QA report for limitations
+and verified build/test/launch/distribution evidence.

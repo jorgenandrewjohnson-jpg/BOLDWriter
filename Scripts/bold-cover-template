@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+# BOLD WRITER — compile the shared production cover model and SVG exporter.
+
+script_dir="$(
+    CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd
+)"
+
+root="$(
+    CDPATH= cd -- "$script_dir/.." && pwd
+)"
+
+temp_dir="$(
+    /usr/bin/mktemp -d "${TMPDIR:-/tmp/}bold-cover-template.XXXXXXXX"
+)"
+
+cleanup() {
+    /bin/rm -f "$temp_dir/cover-template"
+    /bin/rmdir "$temp_dir" 2>/dev/null || true
+}
+
+trap cleanup EXIT
+
+/usr/bin/xcrun swiftc -O \
+    "$root/Sources/BOLDWriter/DocumentCore/PrintCoverGeometry.swift" \
+    "$root/Sources/BOLDWriter/DocumentCore/PrintCoverTemplateSVG.swift" \
+    "$script_dir/bold-cover-template-main.swift" \
+    -o "$temp_dir/cover-template"
+
+status=0
+
+"$temp_dir/cover-template" "$@" || status=$?
+
+exit "$status"

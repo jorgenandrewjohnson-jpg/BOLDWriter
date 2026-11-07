@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+
+# BOLD WRITER — shared geometry model for application and CLI.
+
+script_dir="$(
+    CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd
+)"
+
+root="$(
+    CDPATH= cd -- "$script_dir/.." && pwd
+)"
+
+temp_dir="$(
+    /usr/bin/mktemp -d "${TMPDIR:-/tmp/}bold-cover-geometry.XXXXXXXX"
+)"
+
+cleanup() {
+    /bin/rm -f "$temp_dir/bold-cover-geometry"
+    /bin/rmdir "$temp_dir" 2>/dev/null || true
+}
+
+trap cleanup EXIT
+
+/usr/bin/xcrun swiftc -O \
+    "$root/Sources/BOLDWriter/DocumentCore/PrintCoverGeometry.swift" \
+    "$script_dir/bold-cover-geometry-main.swift" \
+    -o "$temp_dir/bold-cover-geometry"
+
+status=0
+
+"$temp_dir/bold-cover-geometry" "$@" || status=$?
+
+exit "$status"

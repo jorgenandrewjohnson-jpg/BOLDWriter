@@ -1,0 +1,5 @@
+module LAMEEncoder {
+    header "lame.h"
+    header "BOLDLAMEBridge.h"
+    export *
+}

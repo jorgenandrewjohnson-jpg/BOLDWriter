@@ -1,0 +1,52 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+		AA0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = { AA0000000000000000000010 = { CreatedOnToolsVersion = 26.0; }; AA0000000000000000000020 = { CreatedOnToolsVersion = 26.0; TestTargetID = AA0000000000000000000010; }; }; };
+			buildConfigurationList = AA0000000000000000000030;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = AA0000000000000000000002;
+			productRefGroup = AA0000000000000000000003;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (AA0000000000000000000010, AA0000000000000000000020);
+		};
+		AA0000000000000000000002 = { isa = PBXGroup; children = (AA0000000000000000000004, AA0000000000000000000005, AA0000000000000000000006, AA0000000000000000000007, AA0000000000000000000003); sourceTree = "<group>"; };
+		AA0000000000000000000003 = { isa = PBXGroup; children = (AA0000000000000000000008, AA0000000000000000000009); name = Products; sourceTree = "<group>"; };
+		AA0000000000000000000004 = { isa = PBXFileSystemSynchronizedRootGroup; path = Sources/BOLDWriter; sourceTree = "<group>"; };
+		AA0000000000000000000005 = { isa = PBXFileSystemSynchronizedRootGroup; path = Tests/BOLDWriterTests; sourceTree = "<group>"; };
+		AA0000000000000000000006 = { isa = PBXFileSystemSynchronizedRootGroup; path = Resources; sourceTree = "<group>"; };
+		AA0000000000000000000007 = { isa = PBXGroup; children = (); path = Config; sourceTree = "<group>"; };
+		AA0000000000000000000008 = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BOLD Writer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000009 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BOLDWriterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000010 = { isa = PBXNativeTarget; buildConfigurationList = AA0000000000000000000031; buildPhases = (AA0000000000000000000011, AA0000000000000000000012, AA0000000000000000000013); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (AA0000000000000000000004, AA0000000000000000000006); name = "BOLD Writer"; packageProductDependencies = (); productName = "BOLD Writer"; productReference = AA0000000000000000000008; productType = "com.apple.product-type.application"; };
+		AA0000000000000000000011 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000012 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000013 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000020 = { isa = PBXNativeTarget; buildConfigurationList = AA0000000000000000000032; buildPhases = (AA0000000000000000000021, AA0000000000000000000022, AA0000000000000000000023); buildRules = (); dependencies = (AA0000000000000000000024); fileSystemSynchronizedGroups = (AA0000000000000000000005); name = BOLDWriterTests; packageProductDependencies = (); productName = BOLDWriterTests; productReference = AA0000000000000000000009; productType = "com.apple.product-type.bundle.unit-test"; };
+		AA0000000000000000000021 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000022 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000023 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		AA0000000000000000000024 = { isa = PBXTargetDependency; target = AA0000000000000000000010; targetProxy = AA0000000000000000000025; };
+		AA0000000000000000000025 = { isa = PBXContainerItemProxy; containerPortal = AA0000000000000000000001; proxyType = 1; remoteGlobalIDString = AA0000000000000000000010; remoteInfo = "BOLD Writer"; };
+		AA0000000000000000000030 = { isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000040, AA0000000000000000000041, AA0000000000000000000046); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		AA0000000000000000000031 = { isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000042, AA0000000000000000000043, AA0000000000000000000047); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		AA0000000000000000000032 = { isa = XCConfigurationList; buildConfigurations = (AA0000000000000000000044, AA0000000000000000000045); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		AA0000000000000000000040 = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include $(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/libmp3lame"; GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_CONFIG_H"; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include"; SWIFT_VERSION = 5.0; }; name = Debug; };
+		AA0000000000000000000041 = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include $(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/libmp3lame"; GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_CONFIG_H"; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include"; SWIFT_VERSION = 5.0; }; name = Release; };
+		AA0000000000000000000042 = { isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_TESTABILITY = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Config/Info.plist; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.boldwriter.app; PRODUCT_MODULE_NAME = BOLDWriter; PRODUCT_NAME = "BOLD Writer"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		AA0000000000000000000043 = { isa = XCBuildConfiguration; buildSettings = { ARCHS = "arm64 x86_64"; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Config/Info.plist; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.boldwriter.app; PRODUCT_MODULE_NAME = BOLDWriter; PRODUCT_NAME = "BOLD Writer"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		AA0000000000000000000044 = { isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = com.boldwriter.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BOLD Writer.app/Contents/MacOS/BOLD Writer"; }; name = Debug; };
+		AA0000000000000000000045 = { isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = com.boldwriter.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BOLD Writer.app/Contents/MacOS/BOLD Writer"; }; name = Release; };
+		AA0000000000000000000046 = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include $(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/libmp3lame"; GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_CONFIG_H"; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/Sources/BOLDWriter/AudioProduction/LAME/include"; SWIFT_VERSION = 5.0; }; name = "Release-MAS"; };
+		AA0000000000000000000047 = { isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGN_ENTITLEMENTS = Config/BOLDWriter-MAS.entitlements; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_APP_SANDBOX = YES; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Config/Info.plist; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.boldwriter.app.masacceptance; PRODUCT_MODULE_NAME = BOLDWriter; PRODUCT_NAME = "BOLD Writer"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APP_STORE"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = "Release-MAS"; };
+	};
+	rootObject = AA0000000000000000000001;
+}

@@ -1,0 +1,21 @@
+{
+  "format": "bold-script",
+  "version": 1,
+  "title": "Standardize manuscript formatting",
+  "target": { "scope": "document" },
+  "operations": [
+    { "type": "replaceText", "find": "  ", "replaceWith": " " },
+    {
+      "type": "formatText",
+      "find": "Chapter One",
+      "fontFamily": "Helvetica",
+      "fontSize": 18,
+      "bold": true
+    },
+    {
+      "type": "setParagraphStyle",
+      "paragraphPrefix": "Chapter ",
+      "style": "Heading 1"
+    }
+  ]
+}

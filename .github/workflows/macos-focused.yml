@@ -1,0 +1,35 @@
+name: macOS focused build and tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  focused:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version
+      - name: DOCX and layout regressions
+        env:
+          TMPDIR: /tmp
+        run: |
+          swift test -j 1 --filter DOCXImageTests
+          swift test -j 1 --filter FloatingImageLayoutTests
+      - name: Cover and publishing regressions
+        env:
+          TMPDIR: /tmp
+        run: |
+          swift test -j 1 --filter CoverMultiLayerTests
+          swift test -j 1 --filter BookHealthCheckTests
+      - name: SwiftPM Release
+        env:
+          TMPDIR: /tmp
+        run: swift build -c release -j 1
+      - name: Native Xcode Release
+        env:
+          TMPDIR: /tmp
+        run: Scripts/bold xcode-build

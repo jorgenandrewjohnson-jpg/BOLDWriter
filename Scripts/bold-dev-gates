@@ -1,0 +1,71 @@
+#!/bin/zsh
+# BOLD WRITER — reusable development quality gates.
+# Run from any directory; never modifies Git or closes caller's shell.
+set -euo pipefail
+
+root="$(cd -- "$(dirname -- "${0:A}")/.." && pwd)"
+cd "$root"
+
+case "${1:-help}" in
+    preflight)
+        /usr/bin/git diff --check
+        /usr/bin/git diff --cached --check
+        print "GATE=GIT_DIFF_CHECK_PASS"
+        print "GATE=BRANCH_$(/usr/bin/git branch --show-current)"
+        print "GATE=HEAD_$(/usr/bin/git rev-parse --short HEAD)"
+        print "GATE=READ_ONLY_PREFLIGHT_PASS"
+        ;;
+    batch)
+        shift
+        if (( $# < 1 )); then
+            print -u2 "Usage: Scripts/bold-dev-gates batch Suite [Suite ...]"
+            exit 2
+        fi
+
+        for suite in "$@"; do
+            "$root/Scripts/bold" test "$suite"
+            print "GATE=FOCUSED_PASS_${suite}"
+        done
+
+        "$root/Scripts/bold" test
+        print "GATE=FULL_REGRESSION_PASS"
+
+        /usr/bin/swift build -c release
+        print "GATE=SWIFTPM_RELEASE_PASS"
+
+        "$root/Scripts/bold" xcode-build
+        print "GATE=NATIVE_RELEASE_PASS"
+        ;;
+    focused)
+        shift
+        if (( $# != 1 )); then
+            print -u2 "Usage: Scripts/bold-dev-gates focused TestSuite"
+            exit 2
+        fi
+        exec "$root/Scripts/bold" test "$1"
+        ;;
+    full)
+        exec "$root/Scripts/bold" test
+        ;;
+    release)
+        /usr/bin/swift build -c release
+        print "GATE=SWIFTPM_RELEASE_PASS"
+        "$root/Scripts/bold" xcode-build
+        print "GATE=NATIVE_RELEASE_PASS"
+        ;;
+    verify)
+        exec "$root/Scripts/bold" verify-install
+        ;;
+    help|-h|--help)
+        print "BOLD Writer development gates"
+        print "  focused TestSuite  Test only the named suite"
+        print "  full               Full Swift regression"
+        print "  release            Both Release build targets"
+        print "  verify             Verify installed application"
+        print "Installation and Git commits are deliberately separate."
+        ;;
+    *)
+        print -u2 "Unknown development gate: $1"
+        exit 2
+        ;;
+esac

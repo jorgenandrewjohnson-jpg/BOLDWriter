@@ -1,0 +1,320 @@
+#!/bin/bash
+# BOLD WRITER COVER PROOF PDF COMMAND V1
+if [ "${1:-}" = "cover-proof" ]; then
+    shift
+    bold_proof_script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+    exec "$bold_proof_script_dir/bold-cover-proof" "$@"
+fi
+# BOLD WRITER COVER TEMPLATE SVG COMMAND V1
+if [ "${1:-}" = "cover-template" ]; then
+    shift
+    bold_cover_template_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+    exec "$bold_cover_template_dir/bold-cover-template" "$@"
+fi
+# BOLD WRITER COVER GEOMETRY COMMAND V1
+if [ "${1:-}" = "cover-geometry" ]; then
+    shift
+    bold_cover_script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+    exec "$bold_cover_script_dir/bold-cover-geometry" "$@"
+fi
+# BOLD WRITER PDF PREFLIGHT COMMAND V1
+if [ "${1:-}" = "pdf-preflight" ]; then
+    shift
+    bold_preflight_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+    exec /usr/bin/xcrun swift "$bold_preflight_dir/bold-pdf-preflight.swift" "$@"
+fi
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(cd "$script_dir/.." && pwd -P)"
+native_derived="$repo_root/DerivedDataRelease"
+native_app="$native_derived/Build/Products/Release/BOLD Writer.app"
+mas_derived="$repo_root/DerivedDataMAS"
+mas_app="$mas_derived/Build/Products/Release-MAS/BOLD Writer.app"
+installed_app="/Applications/BOLD Writer.app"
+desktop_link="$HOME/Desktop/BOLD Writer.app"
+executable_name="BOLD Writer"
+cd "$repo_root"
+
+usage() {
+    printf '%s\n' 'Usage: Scripts/bold COMMAND [ARGUMENT]' '' \
+        '  doctor             Environment and repository bootstrap (no secrets)' \
+        '  status             Git, build, and installation status' \
+        '  agent-context      Machine-readable repository, subsystem, and command map' \
+        '  verify-repo        Check repository identity, diff whitespace, staged safety' \
+        '  resolve            Resolve Swift package dependencies' \
+        '  build              SwiftPM Debug build' \
+        '  build-release      SwiftPM Release build' \
+        '  test [FILTER]      Full or focused SwiftPM tests; acceptance disabled' \
+        '  xcode-build        Native Xcode Release build without GUI/signing' \
+        '  mas-build          Unsigned Mac App Store Release-MAS sandbox configuration build' \
+        '  xcode-test         Native Xcode tests without GUI/signing' \
+        '  clean              Clean generated SwiftPM/Xcode build products' \
+        '  sign               Ad-hoc sign the generated native Release app' \
+        '  verify-install     Verify installed bundle, source identity, signature, and launcher' \
+        '  source-identity    Compare installed app provenance with this checkout' \
+        '  install            Build, stage, sign, verify, and back up local app' \
+        '  launch             Launch and confirm the installed app process' \
+        '  package            Run the existing release packaging workflow' \
+        '  verify             Diff check, full tests, both Release builds' \
+        '  acceptance-pdf P   Explicitly run real-PDF acceptance on path P' \
+        '  acceptance-docx P  Explicitly run real-DOCX acceptance on path P'
+}
+
+fail() { printf 'BOLD Writer: ERROR: %s\n' "$*" >&2; exit 1; }
+ok() { printf 'BOLD Writer: OK: %s\n' "$*"; }
+require_file() { [[ -f "$1" ]] || fail "Missing file: $1"; }
+
+check_launcher() {
+    if [[ -e "$desktop_link" || -L "$desktop_link" ]]; then
+        [[ -L "$desktop_link" ]] || fail "Desktop launcher is not a symlink: $desktop_link"
+        [[ "$(readlink "$desktop_link")" == "$installed_app" ]] ||
+            fail "Desktop launcher points somewhere unexpected; it was not changed."
+    fi
+}
+
+check_bundle() {
+    local app="$1" expected_id="${2:-com.boldwriter.app}" bundle_id
+    require_file "$app/Contents/MacOS/$executable_name"
+    require_file "$app/Contents/Info.plist"
+    bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")"
+    [[ "$bundle_id" == "$expected_id" ]] || fail "Unexpected bundle identifier in $app: expected $expected_id, got $bundle_id"
+}
+
+uuid_list() {
+    dwarfdump --uuid "$1" | awk '{ print $2, $3 }'
+}
+
+source_diff_sha256() {
+    git diff --binary HEAD -- | shasum -a 256 | awk '{print $1}'
+}
+
+stamp_source_identity() {
+    local app="$1" revision diff_hash info
+    info="$app/Contents/Info.plist"
+    revision="$(git rev-parse HEAD)"
+    diff_hash="$(source_diff_sha256)"
+    /usr/libexec/PlistBuddy -c 'Delete :BOLDWriterSourceRevision' "$info" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c 'Delete :BOLDWriterSourceDiffSHA256' "$info" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Add :BOLDWriterSourceRevision string $revision" "$info"
+    /usr/libexec/PlistBuddy -c "Add :BOLDWriterSourceDiffSHA256 string $diff_hash" "$info"
+    printf 'Build source: %s (tracked diff %s)\n' "$revision" "$diff_hash"
+}
+
+verify_source_identity() {
+    local app="$1" expected_revision expected_diff actual_revision actual_diff
+    expected_revision="$(git rev-parse HEAD)"
+    expected_diff="$(source_diff_sha256)"
+    actual_revision="$(/usr/libexec/PlistBuddy -c 'Print :BOLDWriterSourceRevision' "$app/Contents/Info.plist" 2>/dev/null || true)"
+    actual_diff="$(/usr/libexec/PlistBuddy -c 'Print :BOLDWriterSourceDiffSHA256' "$app/Contents/Info.plist" 2>/dev/null || true)"
+    [[ "$actual_revision" == "$expected_revision" ]] ||
+        fail "Installed app source revision is '$actual_revision'; checkout is '$expected_revision'. Rebuild and reinstall before acceptance."
+    [[ "$actual_diff" == "$expected_diff" ]] ||
+        fail 'Installed app was built from a different tracked working-tree diff. Rebuild and reinstall before acceptance.'
+    printf 'Verified source-to-app identity: %s (tracked diff %s)\n' "$actual_revision" "$actual_diff"
+}
+
+xcode_build() {
+    xcodebuild -project "$repo_root/BOLDWriter.xcodeproj" \
+        -scheme 'BOLD Writer' -configuration Release \
+        -destination 'generic/platform=macOS' -derivedDataPath "$native_derived" \
+        CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build
+    check_bundle "$native_app"
+    stamp_source_identity "$native_app"
+    ok "Native Release app built at $native_app"
+}
+
+mas_build() {
+    xcodebuild -project "$repo_root/BOLDWriter.xcodeproj" \
+        -scheme 'BOLD Writer' -configuration Release-MAS \
+        -destination 'generic/platform=macOS' -derivedDataPath "$mas_derived" \
+        CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build
+    check_bundle "$mas_app" 'com.boldwriter.app.masacceptance'
+    stamp_source_identity "$mas_app"
+    ok "Unsigned Release-MAS candidate built at $mas_app; signing and sandbox runtime acceptance remain separate steps"
+}
+
+verify_install() {
+    check_launcher
+    check_bundle "$installed_app"
+    verify_source_identity "$installed_app"
+    check_bundle "$native_app"
+    verify_source_identity "$native_app"
+    [[ "$(uuid_list "$installed_app/Contents/MacOS/$executable_name")" == "$(uuid_list "$native_app/Contents/MacOS/$executable_name")" ]] ||
+        fail 'Installed executable UUIDs differ from this checkout’s verified native Release build.'
+    if [[ -e "$desktop_link" || -L "$desktop_link" ]]; then
+        [[ "$(cd "$(dirname "$desktop_link")" && pwd -P)/$(basename "$desktop_link")" -ef "$installed_app" ]] ||
+            fail 'Desktop launcher does not resolve to the verified installed application.'
+    fi
+    codesign --verify --deep --strict --verbose=2 "$installed_app"
+    printf 'Installed Mach-O UUIDs:\n'
+    uuid_list "$installed_app/Contents/MacOS/$executable_name"
+    ok "Installed bundle and ad-hoc signature verified"
+}
+
+doctor() {
+    printf 'Repository: %s\n' "$repo_root"
+    printf 'Branch: %s\n' "$(git branch --show-current)"
+    printf 'HEAD: %s\n' "$(git rev-parse HEAD)"
+    if [[ -z "$(git status --porcelain)" ]]; then printf 'Working tree: clean\n';
+    else printf 'Working tree: dirty\n'; git status --short; fi
+    printf 'Swift: '; swift --version | head -1
+    printf 'Xcode: '; xcodebuild -version | head -1
+    printf 'macOS: '; sw_vers -productVersion
+    printf 'SwiftPM tests: %s test files\n' "$(find "$repo_root/Tests/BOLDWriterTests" -maxdepth 1 -name '*Tests.swift' -type f | wc -l | tr -d ' ')"
+    printf 'Native Release output: %s\n' "$native_app"
+    printf 'Local install: %s\n' "$installed_app"
+    if [[ -d "$installed_app" ]]; then
+        if codesign --verify --deep --strict "$installed_app" >/dev/null 2>&1; then
+            printf 'Installed signing: valid\n'
+        else
+            printf 'Installed signing: absent or invalid\n'
+        fi
+    else
+        printf 'Installed signing: no local app\n'
+    fi
+    check_launcher
+    ok 'Doctor completed without reading credentials or private documents'
+}
+
+status() {
+    printf 'Branch: %s\nHEAD: %s\n' "$(git branch --show-current)" "$(git rev-parse --short HEAD)"
+    git status --short
+    [[ -d "$repo_root/.build" ]] && printf 'SwiftPM build: present\n' || printf 'SwiftPM build: absent\n'
+    [[ -d "$native_app" ]] && printf 'Native Release app: present\n' || printf 'Native Release app: absent\n'
+    [[ -d "$installed_app" ]] && printf 'Installed app: present\n' || printf 'Installed app: absent\n'
+    check_launcher
+}
+
+verify_repo() {
+    [[ "$(git rev-parse --show-toplevel)" == "$repo_root" ]] || fail 'Not at the BOLD Writer repository root.'
+    git diff --check
+    git diff --cached --check
+    while IFS= read -r staged; do
+        case "$staged" in
+            .codex/*|AGENTS.override.md|DerivedData*|Releases/*|*.backup*)
+                fail "A local/generated artifact is staged: $staged" ;;
+        esac
+    done < <(git diff --cached --name-only)
+    ok 'Repository and staged-file checks passed'
+}
+
+install_app() {
+    check_launcher
+    if pgrep -f "$installed_app/Contents/MacOS/$executable_name" >/dev/null 2>&1; then
+        fail 'The installed app is running; quit it before replacing the bundle.'
+    fi
+    if [[ -e "$installed_app" && ! -d "$installed_app" ]]; then
+        fail "Install target is not an app directory: $installed_app"
+    fi
+    if [[ -d "$installed_app" ]]; then check_bundle "$installed_app"; fi
+    xcode_build
+    local parent stage staged_app original_hash copied_hash original_uuids signed_uuids backup_parent backup
+    parent="$(dirname "$installed_app")"
+    mkdir -p "$parent"
+    stage="$(mktemp -d "$parent/.boldwriter-install.XXXXXX")"
+    staged_app="$stage/BOLD Writer.app"
+    ditto "$native_app" "$staged_app"
+    check_bundle "$staged_app"
+    original_hash="$(shasum -a 256 "$native_app/Contents/MacOS/$executable_name" | awk '{print $1}')"
+    copied_hash="$(shasum -a 256 "$staged_app/Contents/MacOS/$executable_name" | awk '{print $1}')"
+    [[ "$original_hash" == "$copied_hash" ]] || fail 'The unsigned staged executable differs from the Release build.'
+    printf 'Pre-sign executable SHA-256 (build/stage): %s\n' "$original_hash"
+    original_uuids="$(uuid_list "$native_app/Contents/MacOS/$executable_name")"
+    xattr -dr com.apple.FinderInfo "$staged_app" 2>/dev/null || true
+    xattr -dr com.apple.ResourceFork "$staged_app" 2>/dev/null || true
+    codesign --force --deep --sign - "$staged_app"
+    codesign --verify --deep --strict --verbose=2 "$staged_app"
+    signed_uuids="$(uuid_list "$staged_app/Contents/MacOS/$executable_name")"
+    [[ "$original_uuids" == "$signed_uuids" ]] || fail 'Mach-O UUID changed during signing.'
+    backup=''
+    if [[ -d "$installed_app" ]]; then
+        backup_parent="$parent/BOLD Writer Recoveries"
+        mkdir -p "$backup_parent"
+        backup="$backup_parent/BOLD Writer $(date +%Y%m%d-%H%M%S)-$$.app"
+        [[ ! -e "$backup" ]] || fail "Recovery target already exists: $backup"
+        mv "$installed_app" "$backup"
+        printf 'Previous app recovery copy: %s\n' "$backup"
+    fi
+    if ! mv "$staged_app" "$installed_app"; then
+        if [[ -n "$backup" && ! -e "$installed_app" ]]; then mv "$backup" "$installed_app"; fi
+        fail 'Could not move signed app into the install location.'
+    fi
+    if ! codesign --verify --deep --strict "$installed_app" >/dev/null 2>&1 ||
+       [[ "$(uuid_list "$installed_app/Contents/MacOS/$executable_name")" != "$original_uuids" ]]; then
+        mv "$installed_app" "$stage/failed.app"
+        if [[ -n "$backup" ]]; then mv "$backup" "$installed_app"; fi
+        fail "Installed verification failed; previous app restored, failed copy retained at $stage/failed.app"
+    fi
+    rmdir "$stage"
+    verify_install
+    ok 'Local app installed; post-sign SHA equality was intentionally not assumed'
+}
+
+command="${1:-help}"
+if [[ $# -gt 0 ]]; then shift; fi
+case "$command" in
+    help|-h|--help) usage ;;
+    doctor) doctor ;;
+    status) status ;;
+    agent-context) python3 "$script_dir/bold-agent-context.py" ;;
+    verify-repo) verify_repo ;;
+    resolve) swift package resolve; ok 'Dependencies resolved' ;;
+    build) swift build; ok 'SwiftPM Debug build passed' ;;
+    build-release) swift build -c release; ok 'SwiftPM Release build passed' ;;
+    test)
+        unset BOLD_ACCEPTANCE_DOCX BOLD_ACCEPTANCE_PDF
+        if [[ $# -eq 0 ]]; then swift test;
+        elif [[ $# -eq 1 ]]; then swift test --filter "$1";
+        else fail 'test accepts at most one filter'; fi
+        ok 'SwiftPM tests passed' ;;
+    xcode-build) xcode_build ;;
+    mas-build) mas_build ;;
+    xcode-test)
+        unset BOLD_ACCEPTANCE_DOCX BOLD_ACCEPTANCE_PDF
+        xcodebuild -project "$repo_root/BOLDWriter.xcodeproj" -scheme 'BOLD Writer' \
+            -configuration Debug -destination 'platform=macOS' -derivedDataPath "$native_derived" \
+            CODE_SIGNING_ALLOWED=NO test
+        ok 'Native Xcode tests passed' ;;
+    clean)
+        swift package clean
+        xcodebuild -project "$repo_root/BOLDWriter.xcodeproj" -scheme 'BOLD Writer' \
+            -configuration Release -destination 'generic/platform=macOS' \
+            -derivedDataPath "$native_derived" CODE_SIGNING_ALLOWED=NO clean
+        ok 'Generated build products cleaned; documents and installed app untouched' ;;
+    sign)
+        check_bundle "$native_app"
+        codesign --force --deep --sign - "$native_app"
+        codesign --verify --deep --strict --verbose=2 "$native_app"
+        ok 'Generated native Release app ad-hoc signed' ;;
+    verify-install) verify_install ;;
+    source-identity) verify_source_identity "$installed_app" ;;
+    install) install_app ;;
+    launch)
+        verify_install
+        open -a "$installed_app"
+        sleep 2
+        pgrep -f "$installed_app/Contents/MacOS/$executable_name" >/dev/null ||
+            fail 'LaunchServices returned but the installed app process was not found.'
+        ok 'Installed app process is running' ;;
+    package) "$script_dir/package-release.sh"; ok 'Release package created' ;;
+    verify)
+        verify_repo
+        unset BOLD_ACCEPTANCE_DOCX BOLD_ACCEPTANCE_PDF
+        swift test
+        swift build -c release
+        xcode_build
+        ok 'Repository, tests, SwiftPM Release, and native Release verified' ;;
+    acceptance-pdf|acceptance-docx)
+        [[ $# -eq 1 ]] || fail "$command requires one explicit fixture path"
+        require_file "$1"
+        if [[ "$command" == 'acceptance-pdf' ]]; then
+            unset BOLD_ACCEPTANCE_DOCX
+            BOLD_ACCEPTANCE_PDF="$1" swift test --filter PDFImportTests.testRealManuscriptPDFImportsWhenConfigured
+        else
+            unset BOLD_ACCEPTANCE_PDF
+            BOLD_ACCEPTANCE_DOCX="$1" swift test --filter NativeInputRoutingTests.testRealManuscriptEditorRoundTrip
+        fi
+        ok "$command passed" ;;
+    *) usage >&2; fail "Unknown command: $command" ;;
+esac

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boldwriter.com/schemas/bold-script-v1.schema.json",
+  "title": "BOLD Script v1",
+  "description": "A declarative, document-scoped BOLD Writer automation manifest. This format is data and cannot execute operating-system code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "target", "operations"],
+  "properties": {
+    "format": { "const": "bold-script" },
+    "version": { "const": 1 },
+    "title": { "type": "string", "maxLength": 200 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope"],
+      "properties": { "scope": { "const": "document" } }
+    },
+    "preconditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "documentRevision": { "type": "string", "format": "uuid" } }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "find", "replaceWith"],
+            "properties": {
+              "type": { "const": "replaceText" },
+              "find": { "type": "string", "minLength": 1 },
+              "replaceWith": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "find"],
+            "anyOf": [
+              { "required": ["fontFamily"] },
+              { "required": ["fontSize"] },
+              { "required": ["bold"] },
+              { "required": ["italic"] }
+            ],
+            "properties": {
+              "type": { "const": "formatText" },
+              "find": { "type": "string", "minLength": 1 },
+              "fontFamily": { "type": "string", "minLength": 1 },
+              "fontSize": { "type": "number", "minimum": 6, "maximum": 288 },
+              "bold": { "type": "boolean" },
+              "italic": { "type": "boolean" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "paragraphPrefix", "style"],
+            "properties": {
+              "type": { "const": "setParagraphStyle" },
+              "paragraphPrefix": { "type": "string", "minLength": 1 },
+              "style": { "$ref": "#/$defs/style" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "rules"],
+            "properties": {
+              "type": { "const": "normalizeHeadings" },
+              "rules": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["paragraphPrefix", "style"],
+                  "properties": {
+                    "paragraphPrefix": { "type": "string", "minLength": 1 },
+                    "style": { "enum": ["Heading 1", "Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6"] }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "sourcePath", "page", "x", "y", "width", "height"],
+            "properties": {
+              "type": { "const": "insertFloatingImage" },
+              "sourcePath": { "type": "string", "pattern": "^/" },
+              "page": { "type": "integer", "minimum": 1 },
+              "x": { "type": "number" }, "y": { "type": "number" },
+              "width": { "type": "number", "exclusiveMinimum": 0 },
+              "height": { "type": "number", "exclusiveMinimum": 0 },
+              "rotation": { "type": "number" },
+              "wrapping": { "enum": ["none", "square", "tight", "topAndBottom"] },
+              "wrapDistance": { "type": "number", "minimum": 0, "maximum": 288 },
+              "layer": { "enum": ["behindText", "inFrontOfText"] },
+              "anchor": { "enum": ["page", "margins", "paragraph", "character"] },
+              "anchorLocation": { "type": "integer", "minimum": 0 },
+              "preservesAspectRatio": { "type": "boolean" },
+              "lockPosition": { "type": "boolean" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "imageID"],
+            "anyOf": [
+              { "required": ["page"] }, { "required": ["x"] }, { "required": ["y"] }, { "required": ["width"] },
+              { "required": ["height"] }, { "required": ["rotation"] }, { "required": ["wrapping"] },
+              { "required": ["wrapDistance"] }, { "required": ["layer"] }, { "required": ["anchor"] },
+              { "required": ["anchorLocation"] }, { "required": ["preservesAspectRatio"] },
+              { "required": ["zOrder"] }, { "required": ["lockPosition"] }
+            ],
+            "properties": {
+              "type": { "const": "updateFloatingImage" },
+              "imageID": { "type": "string", "format": "uuid" },
+              "page": { "type": "integer", "minimum": 1 },
+              "x": { "type": "number" }, "y": { "type": "number" },
+              "width": { "type": "number", "exclusiveMinimum": 0 },
+              "height": { "type": "number", "exclusiveMinimum": 0 },
+              "rotation": { "type": "number" },
+              "wrapping": { "enum": ["none", "square", "tight", "topAndBottom"] },
+              "wrapDistance": { "type": "number", "minimum": 0, "maximum": 288 },
+              "layer": { "enum": ["behindText", "inFrontOfText"] },
+              "anchor": { "enum": ["page", "margins", "paragraph", "character"] },
+              "anchorLocation": { "type": "integer", "minimum": 0 },
+              "preservesAspectRatio": { "type": "boolean" },
+              "zOrder": { "type": "integer" },
+              "lockPosition": { "type": "boolean" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "imageID"],
+            "properties": {
+              "type": { "const": "duplicateFloatingImage" },
+              "imageID": { "type": "string", "format": "uuid" },
+              "x": { "type": "number" }, "y": { "type": "number" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "imageIDs", "alignment"],
+            "properties": {
+              "type": { "const": "alignFloatingImages" },
+              "imageIDs": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string", "format": "uuid" } },
+              "alignment": { "enum": ["left", "center", "right", "top", "middle", "bottom"] }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type"],
+            "properties": {
+              "type": { "const": "inspectFloatingImages" },
+              "imageIDs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "format": "uuid" } }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "style": {
+      "enum": ["Normal", "No Spacing", "Title", "Subtitle", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6", "Quote", "Intense Quote", "Block Quote", "Caption"]
+    }
+  }
+}
