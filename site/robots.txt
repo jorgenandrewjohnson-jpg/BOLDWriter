@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/sitemap.xml
+Sitemap: https://authorsbebold.github.io/sitemap.xml
