@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#102137"/><stop offset="1" stop-color="#244362"/></linearGradient><filter id="shadow"><feDropShadow dx="20" dy="24" stdDeviation="13" flood-color="#071321" flood-opacity=".65"/></filter></defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1000" cy="310" r="270" fill="none" stroke="#8a9da5" stroke-opacity=".25" stroke-width="2"/>
+  <text x="80" y="178" fill="#e4ad69" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="4">OPEN SOURCE · MACOS · FOR AUTHORS</text>
+  <text x="78" y="300" fill="#fff9ed" font-family="Georgia,serif" font-size="101" font-weight="700">BOLD Writer</text>
+  <text x="82" y="389" fill="#e4ad69" font-family="Georgia,serif" font-size="40">Be Bold. Write Freely.</text>
+  <text x="82" y="443" fill="#fff9ed" font-family="Georgia,serif" font-size="40">Publish Beautifully.</text>
+  <text x="82" y="542" fill="#c4d0d2" font-family="Arial,sans-serif" font-size="24">A publishing studio we can build together.</text>
+  <g filter="url(#shadow)" transform="translate(841 193) rotate(-8 160 128)"><path d="M0 12c105-23 157-14 159 5v247c-56-23-112-27-159-8z" fill="#ede2c9"/><path d="M159 17c59-25 111-28 161-5v244c-51-19-102-15-161 8z" fill="#fff6e5"/><path d="M159 17v247" stroke="#b68d59" stroke-width="5"/><g stroke="#b9ae9b" stroke-width="4" opacity=".85"><path d="M24 67h104M24 90h99M24 113h108M24 136h84M24 159h103M188 67h102M188 90h96M188 113h105M188 136h84M188 159h103"/></g></g>
+  <rect x="0" y="614" width="1280" height="26" fill="#e4ad69"/>
+</svg>
