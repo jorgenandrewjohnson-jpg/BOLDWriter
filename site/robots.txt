@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/sitemap.xml
