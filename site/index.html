@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111f32">
+  <meta name="description" content="BOLD Writer is a free, open-source macOS studio for writing, designing, and publishing books. Help build it with authors everywhere.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BOLD Writer — Be Bold. Write Freely. Publish Beautifully.">
+  <meta property="og:description" content="An open-source macOS publishing studio under active development. Come build better tools for authors.">
+  <meta property="og:url" content="https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/">
+  <meta property="og:image" content="https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>BOLD Writer — Write freely. Publish beautifully.</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="BOLD Writer home"><img src="assets/favicon.svg" alt="" width="36" height="36"><span>BOLD Writer</span></a>
+    <nav aria-label="Main navigation"><a href="#why">Mission</a><a href="#work">What works</a><a href="#contribute">Contribute</a><a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter">GitHub ↗</a></nav>
+  </header>
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A free, open-source macOS publishing studio</p>
+        <h1 id="hero-title">Be Bold.<br><em>Write Freely.</em><br>Publish Beautifully.</h1>
+        <p class="lead">Write the manuscript. Shape the pages. Design the cover. See the book take form. Help us build one place for an author's whole creative journey.</p>
+        <div class="actions"><a class="button primary" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter">Explore the source <span aria-hidden="true">↗</span></a><a class="button secondary" href="#contribute">Help build it</a></div>
+        <p class="status">Under active development · macOS 14+ · MIT-licensed app source</p>
+      </div>
+      <div class="hero-art" role="img" aria-label="Illustrated open-book motif representing manuscripts becoming finished books"><div class="book"><div class="book-page left"><span>Every story</span><i></i><i></i><i></i><i></i><i></i></div><div class="book-page right"><span>begins boldly.</span><i></i><i></i><i></i><i></i><i></i></div></div><p>From first page to finished form.</p></div>
+    </section>
+    <section class="mission panel" id="why"><div><p class="eyebrow">Why BOLD Writer exists</p><h2>Authors deserve better tools.</h2></div><div><p>BOLD Writer began as one person's attempt to make beautiful, professional book publishing more accessible. The project has grown beyond what one person can reasonably finish alone. I'm opening it to the world because the best version of this studio will be built with the people who write, design, and engineer it.</p><p><strong>Let's be BOLD together.</strong></p></div></section>
+    <section class="section" id="work"><div class="section-heading"><p class="eyebrow">The studio in progress</p><h2>One book. Many creative tools.</h2><p>These capabilities exist in the source today. Their breadth and reliability vary; the project is not yet a supported general-release binary.</p></div><div class="cards"><article><span class="number">01</span><h3>Write & edit</h3><p>Native manuscript editing, rich text, styles, search, outline navigation, and editable document packages.</p></article><article><span class="number">02</span><h3>Import & lay out</h3><p>DOCX handling, illustrated page layout, facing-page options, and PDF export powered by the manuscript model.</p></article><article><span class="number">03</span><h3>Design the cover</h3><p>Editable layers, crops, masks, grouping, alignment, guides, and print-wrap geometry.</p></article><article><span class="number">04</span><h3>See the book</h3><p>A native 3D preview renders manuscript pages and cover art. Interactive acceptance still needs more work.</p></article></div></section>
+    <section class="proof panel" id="gallery"><div class="proof-copy"><p class="eyebrow">Real output, clearly labeled</p><h2>A book you can inspect.</h2><p>This image comes from BOLD Writer's native 3D renderer using a disposable synthetic manuscript. It demonstrates rendered page content. It is not a screenshot of an accepted interactive GUI workflow.</p><a class="text-link" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/blob/main/Docs/OpenSourceStatus.md">Read the honest status ↗</a></div><figure><img src="assets/book-studio-synthetic.png" width="1600" height="1200" loading="lazy" alt="Native 3D renderer output showing an open book with actual text from a synthetic test manuscript"><figcaption>Native 3D Book Studio · synthetic acceptance render</figcaption></figure></section>
+    <section class="section roadmap"><div class="section-heading"><p class="eyebrow">The path forward</p><h2>Help turn working pieces into a dependable studio.</h2></div><ol><li><strong>Make building easy.</strong><span>Reproducible macOS builds and contributor onboarding.</span></li><li><strong>Protect every manuscript.</strong><span>Document round trips, pagination, and artwork fidelity.</span></li><li><strong>Polish creation and publishing.</strong><span>Cover editing, 3D interaction, PDF proofing, and accessibility.</span></li><li><strong>Earn a stable release.</strong><span>Complete integrated GUI acceptance, performance testing, signing, and distribution review.</span></li></ol><a class="text-link" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/blob/main/Docs/Roadmap.md">Full development roadmap ↗</a></section>
+    <section class="join panel" id="contribute"><p class="eyebrow">Open invitation</p><h2>There is a place for you here.</h2><p>Programmers can tackle focused issues. Designers can improve the authoring experience. Authors can explain what publishing software gets wrong. Students can learn in the open. Bring curiosity and a reproducible example.</p><div class="actions"><a class="button primary" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/issues">Find a task ↗</a><a class="button secondary" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/discussions">Join the conversation ↗</a></div></section>
+    <section class="section start"><div><p class="eyebrow">Get started as a developer</p><h2>Build from source.</h2><p>Use a Mac with macOS 14 or later and full Xcode. There is no notarized downloadable app yet. The project includes SwiftPM tests and an Xcode Release build.</p><p><a class="text-link" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/blob/main/CONTRIBUTING.md">Read the contributor guide ↗</a> · <a class="text-link" href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/blob/main/SECURITY.md">Security policy ↗</a></p></div><pre><code>git clone https://github.com/jorgenandrewjohnson-jpg/BOLDWriter.git
+cd BOLDWriter
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export TMPDIR=/tmp
+swift test -j 1 --filter DOCXImageTests
+Scripts/bold xcode-build</code></pre></section>
+  </main>
+  <footer><div><strong>BOLD Writer</strong><p>Be Bold. Write Freely. Publish Beautifully.</p></div><div><a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter">Source</a><a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/issues">Issues</a><a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/discussions">Discussions</a><a href="https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/blob/main/LICENSE">MIT license</a></div></footer>
+</body>
+</html>

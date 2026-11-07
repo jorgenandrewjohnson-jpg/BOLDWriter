@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 160" role="img" aria-labelledby="title desc">
+  <title id="title">BOLD Writer</title><desc id="desc">An open book mark beside the BOLD Writer name</desc>
+  <rect width="820" height="160" rx="25" fill="#111f32"/>
+  <path d="M44 39c28-10 58-10 87 2v73c-29-12-59-12-87-2z" fill="#e9dec5"/>
+  <path d="M131 41c29-12 59-12 87-2v73c-28-10-58-10-87 2z" fill="#f8efe0"/>
+  <path d="M131 43v72" stroke="#bc8d53" stroke-width="5"/>
+  <path d="M58 61c20-4 40-2 58 5M58 81c20-4 40-2 58 5M145 66c18-7 38-9 58-5M145 86c18-7 38-9 58-5" stroke="#a9a18f" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <text x="249" y="97" fill="#f8efe0" font-family="Georgia,serif" font-size="65" font-weight="700" letter-spacing="1">BOLD <tspan fill="#e3ac69">Writer</tspan></text>
+</svg>

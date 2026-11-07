@@ -9,6 +9,8 @@ Thank you for helping authors make better books. BOLD Writer is a native macOS p
 3. Use a branch from the current integration head. Keep commits focused and preserve unrelated changes.
 4. Run the relevant tests and a Release build. Include exact test counts and any skipped GUI verification in your pull request.
 
+The first clone should use `https://github.com/jorgenandrewjohnson-jpg/BOLDWriter.git`. Open `BOLDWriter.xcodeproj` in full Xcode for the native app, or use the commands below from the repository root. The public project website is [here](https://jorgenandrewjohnson-jpg.github.io/BOLDWriter/).
+
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 export TMPDIR=/tmp
@@ -32,5 +34,15 @@ The full test suite has previously used excessive memory in one process. Start w
 Explain the problem, the actual behavior changed, source provenance, tests run, GUI acceptance, and remaining limitations. Link to an issue when one exists. Do not include secrets or private manuscript screenshots. Maintainers review and merge changes; a passing CI job alone does not establish publishing fidelity.
 
 Good first contributions include improving accessibility labels, creating synthetic DOCX fixtures, tightening error messages, and adding bounded tests for existing PDF or cover behavior. See [Roadmap.md](Docs/Roadmap.md) for larger work.
+
+## Coding and review expectations
+
+- Follow the existing Swift/AppKit/SwiftUI style near the changed code. Keep document state in the canonical model; avoid a second importer, renderer, or cover model for one feature.
+- Prefer focused tests with synthetic, redistribution-cleared fixtures. Cover save/reopen and DOCX changes should prove persistence; visual or interactive changes also need a manual GUI check and a description of what was actually exercised.
+- Keep UI work accessible through labels, keyboard focus, and readable contrast. Explain any deliberate behavior change in the pull request.
+- Run `git diff --check`, the relevant focused tests, and a Release build before requesting review. Report exact executed tests and skips. Do not call a zero-execution runner a pass.
+- Maintainers review changes on pull requests. Resolve review comments, keep the branch current, and avoid force-pushing shared branches. The default branch requires a pull request and resolved conversations; automated checks do not replace review of document fidelity or license obligations.
+
+Please open a [question or idea discussion](https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/discussions) for broad design proposals. Use [Issues](https://github.com/jorgenandrewjohnson-jpg/BOLDWriter/issues) for a reproducible defect or scoped task. Do not post a private manuscript as an example.
 
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report suspected vulnerabilities using [SECURITY.md](SECURITY.md), not a public bug report with exploit details.
