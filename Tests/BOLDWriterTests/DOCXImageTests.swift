@@ -541,6 +541,43 @@ final class DOCXImageTests: XCTestCase {
         XCTAssertGreaterThan(try XCTUnwrap(PDFDocument(data: pdf)).pageCount, 0)
     }
 
+    func testWordSimplePositionPictureKeepsPageCoordinatesThroughRoundTrip() throws {
+        let picture = FloatingImage(assetName: "placed.png", imageData: try artwork(width: 16, height: 8),
+                                    anchor: .paragraph, anchorLocation: 5, x: 12, y: 16,
+                                    anchorOffsetX: 12, anchorOffsetY: 16,
+                                    horizontalPositionReference: .paragraph,
+                                    verticalPositionReference: .paragraph,
+                                    width: 80, height: 40, wrapping: .square)
+        let exported = try DOCXExporter.data(from: NSAttributedString(string: "Before after"),
+                                             title: "Simple position", floatingImages: [picture])
+        let entries = try DOCXPackage.entries(in: exported).map { entry -> ZipEntry in
+            guard entry.path == "word/document.xml" else { return entry }
+            var xml = String(decoding: entry.data, as: UTF8.self)
+            xml = xml.replacingOccurrences(of: "simplePos=\"0\"", with: "simplePos=\"1\"")
+            xml = xml.replacingOccurrences(of: "<wp:simplePos x=\"0\" y=\"0\"/>",
+                                           with: "<wp:simplePos x=\"508000\" y=\"762000\"/>")
+            return ZipEntry(path: entry.path, data: Data(xml.utf8))
+        }
+        let imported = try reopen(ZipArchiveWriter.archive(entries))
+        let placed = try XCTUnwrap(imported.metadata.floatingImages?.first)
+        XCTAssertEqual(imported.metadata.floatingImages?.count, 1)
+        XCTAssertFalse(imported.text.string.contains("\u{fffc}"))
+        XCTAssertEqual(placed.horizontalPositionReference, .page)
+        XCTAssertEqual(placed.verticalPositionReference, .page)
+        XCTAssertEqual(placed.anchorOffsetX, 40)
+        XCTAssertEqual(placed.anchorOffsetY, 60)
+        XCTAssertEqual(placed.imageData, picture.imageData)
+
+        let native = try BOLDWriterDocument.packageWrapper(text: imported.text, metadata: imported.metadata)
+        let saved = try BOLDWriterDocument(fileWrapper: native, contentType: .boldWriterDocument)
+        let docx = try ExportService.data(for: .docx, document: saved)
+        let returned = try reopen(docx)
+        XCTAssertEqual(returned.metadata.floatingImages?.first?.horizontalPositionReference, .page)
+        XCTAssertEqual(returned.metadata.floatingImages?.first?.verticalPositionReference, .page)
+        XCTAssertEqual(returned.metadata.floatingImages?.first?.anchorOffsetX, 40)
+        XCTAssertEqual(returned.metadata.floatingImages?.first?.anchorOffsetY, 60)
+    }
+
     func testAlphaDerivedTightWrapExportsDrawingMLPolygonAndRoundTrips() throws {
         let source = try transparentDiamond()
         let text = NSAttributedString(string: "Tight contour paragraph")

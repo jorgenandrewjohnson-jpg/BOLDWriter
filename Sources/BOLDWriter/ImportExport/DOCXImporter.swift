@@ -1227,10 +1227,7 @@ enum DOCXImporter {
         guard let copiedElement = node.copy() as? XMLElement else { return nil }
         let scoped = XMLDocument(rootElement: copiedElement)
         guard let root = node as? XMLElement else { return nil }
-        guard root.attribute(forName: "simplePos")?.stringValue != "1" else {
-            warning("Word simplePos coordinates cannot currently be mapped to BOLD Writer's page/text coordinate frames; that picture was retained inline.")
-            return nil
-        }
+        let usesSimplePosition = root.attribute(forName: "simplePos")?.stringValue == "1"
         guard root.attribute(forName: "allowOverlap")?.stringValue != "0" else {
             warning("A Word floating picture has overlap restrictions that BOLD Writer cannot currently enforce; that picture was retained inline.")
             return nil
@@ -1266,7 +1263,8 @@ enum DOCXImporter {
             default: return nil
             }
         }
-        guard let xReference = horizontalPositionReference(hRef), let yReference = verticalPositionReference(vRef) else {
+        guard let xReference = usesSimplePosition ? FloatingImage.PositionReference.page : horizontalPositionReference(hRef),
+              let yReference = usesSimplePosition ? FloatingImage.PositionReference.page : verticalPositionReference(vRef) else {
             warning("Word column/line or another unsupported position reference cannot be represented exactly; that picture was retained inline.")
             return nil
         }
@@ -1286,10 +1284,10 @@ enum DOCXImporter {
             default: return nil
             }
         }
-        let hAlignment = horizontalAlignment(hPosition.alignment)
-        let vAlignment = verticalAlignment(vPosition.alignment)
-        if (hPosition.alignment != nil && (hAlignment == nil || (hRef != "page" && hRef != "margin")))
-            || (vPosition.alignment != nil && (vAlignment == nil || (vRef != "page" && vRef != "margin"))) {
+        let hAlignment = usesSimplePosition ? nil : horizontalAlignment(hPosition.alignment)
+        let vAlignment = usesSimplePosition ? nil : verticalAlignment(vPosition.alignment)
+        if !usesSimplePosition && ((hPosition.alignment != nil && (hAlignment == nil || (hRef != "page" && hRef != "margin")))
+            || (vPosition.alignment != nil && (vAlignment == nil || (vRef != "page" && vRef != "margin")))) {
             warning("Word aligned positioning is supported only for left/center/right or top/center/bottom relative to page or margins; that picture was retained inline.")
             return nil
         }
@@ -1419,15 +1417,28 @@ enum DOCXImporter {
         }
         let aspectLock = try scoped.nodes(forXPath: ".//*[local-name()='graphicFrameLocks' or local-name()='picLocks'][@noChangeAspect]").first as? XMLElement
         let preservesAspect = aspectLock?.attribute(forName: "noChangeAspect")?.stringValue != "0"
-        let hOffset = hPosition.offset ?? 0
-        let vOffset = vPosition.offset ?? 0
+        var hOffset = hPosition.offset ?? 0
+        var vOffset = vPosition.offset ?? 0
+        if usesSimplePosition {
+            guard let simple = try scoped.nodes(forXPath: ".//*[local-name()='simplePos']").first as? XMLElement,
+                  let rawX = simple.attribute(forName: "x")?.stringValue,
+                  let rawY = simple.attribute(forName: "y")?.stringValue,
+                  let parsedX = Double(rawX), let parsedY = Double(rawY),
+                  parsedX.isFinite, parsedY.isFinite,
+                  parsedX.rounded() == parsedX, parsedY.rounded() == parsedY else {
+                warning("A Word simplePos picture has malformed page coordinates; it was retained inline.")
+                return nil
+            }
+            hOffset = parsedX
+            vOffset = parsedY
+        }
         let x = hOffset / 12_700, y = vOffset / 12_700
         guard x >= 0, y >= 0, x <= 20_000, y <= 20_000,
               bytes.count <= 100 * 1024 * 1024 else {
             warning("A Word floating picture has offsets or image data outside BOLD Writer's safe supported range; it was retained inline.")
             return nil
         }
-        let logicalAnchor: FloatingImage.Anchor = hRef == "character" ? .character : .paragraph
+        let logicalAnchor: FloatingImage.Anchor = !usesSimplePosition && hRef == "character" ? .character : .paragraph
         return FloatingImage(assetName: assetName, imageData: bytes, pageIndex: 0, anchor: logicalAnchor,
                              anchorLocation: 0, x: x, y: y, anchorOffsetX: x,
                              anchorOffsetY: y, horizontalPositionReference: xReference,
