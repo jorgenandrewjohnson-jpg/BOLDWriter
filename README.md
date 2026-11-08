@@ -35,7 +35,7 @@ The [development status](Docs/OpenSourceStatus.md) separates implemented behavio
 
 ### Inside the running app
 
-These are genuine window captures from an isolated macOS Release build of public source commit `a7a9380`, using a disposable synthetic book. They show a successful document open, Cover Creator, and the 3D Studio before and after opening the book and advancing one spread. They do not establish full installed-app acceptance, DOCX round-trip fidelity, or long-book memory stability.
+These are genuine window captures from an isolated macOS Release build of public source commit `a7a9380`, using disposable synthetic book fixtures. The editor capture uses an opaque red and blue inline test image; the 3D captures use the earlier fixture, whose interior image attachment was transparent. They show a successful document open, Cover Creator, and the 3D Studio before and after opening the book and advancing one spread. They do not establish 3D illustration fidelity, full installed-app acceptance, DOCX round-trip fidelity, or long-book memory stability.
 
 | Manuscript editor | Editable cover layers |
 | --- | --- |
