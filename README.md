@@ -33,9 +33,19 @@ The goal is a single native studio for the journey from first paragraph to a des
 
 The [development status](Docs/OpenSourceStatus.md) separates implemented behavior from focused tests and still-pending installed-app acceptance. Optional AI and audiobook workflows exist; ordinary writing, saving, and export need no AI account.
 
-<p align="center"><img src="site/assets/book-studio-synthetic.png" alt="Actual BOLD Writer 3D renderer output: an open hardcover with pages from a synthetic test manuscript" width="720"><br><small>Actual 3D render from a disposable synthetic manuscript. This is renderer evidence, not an interactive GUI acceptance claim.</small></p>
+### Inside the running app
 
-The [project website](https://authorsbebold.github.io/) shows this proof and links to the current work. Genuine application-window screenshots will be added after a privacy-safe GUI capture with disposable content.
+These are genuine window captures from an isolated macOS Release build of public source commit `a7a9380`, using disposable synthetic book fixtures. The editor and open-book captures show the opaque red and blue inline test image in the manuscript and on the first 3D interior page. The closed-book and next-spread captures use an earlier fixture whose interior image was transparent. A bounded native GUI run also opened Book Health and navigated its print proof, turned a spread, rotated the viewport, and switched hardcover/paperback controls. Full installed-app acceptance, DOCX round-trip fidelity, cover save/reopen, and long-book memory stability remain open.
+
+| Manuscript editor | Editable cover layers |
+| --- | --- |
+| <img src="site/assets/app-manuscript-editor.png" alt="BOLD Writer manuscript editor displaying a disposable illustrated book in print layout" width="540"> | <img src="site/assets/app-cover-creator.png" alt="BOLD Writer Cover Creator displaying four editable synthetic cover layers" width="540"> |
+
+| Closed physical book | Open manuscript spread |
+| --- | --- |
+| <img src="site/assets/app-3d-closed.png" alt="3D Studio showing the closed synthetic hardcover and its actual cover artwork" width="540"> | <img src="site/assets/app-3d-open.png" alt="3D Studio showing the opened book with rendered text from the disposable manuscript" width="540"> |
+
+[See the next spread](site/assets/app-3d-second-spread.png) · [Explore the project website](https://authorsbebold.github.io/)
 
 ## Try the source on macOS
 
