@@ -5,6 +5,24 @@ if [[ -n "$(git -C "$project_root" status --porcelain)" ]]; then
     echo "Refusing to package a dirty repository; commit the intended source first." >&2
     exit 1
 fi
+required_release_files=(
+    LICENSE VERSION.txt INSTALL.txt ReleaseNotes.md
+    Docs/ThirdPartyAttribution.md
+    Docs/ThirdParty/WordCraft-LICENSE-MIT.txt
+    Docs/ThirdParty/FabricJS-LICENSE.txt
+    Sources/BOLDWriter/AudioProduction/LAME/COPYING
+    Sources/BOLDWriter/AudioProduction/LAME/LICENSE.upstream
+    Sources/BOLDWriter/AudioProduction/LAME/PROVENANCE.md
+)
+missing_release_files=()
+for relative_path in "${required_release_files[@]}"; do
+    [[ -f "$project_root/$relative_path" ]] || missing_release_files+=("$relative_path")
+done
+if (( ${#missing_release_files[@]} )); then
+    printf 'Release packaging prerequisites are missing; no build was started:\n' >&2
+    printf '  %s\n' "${missing_release_files[@]}" >&2
+    exit 66
+fi
 release_dir="$project_root/Releases/BOLD-Writer-1.0"
 build_dir="$project_root/DerivedDataRelease"
 staging_dir="$(mktemp -d /private/tmp/boldwriter-dmg.XXXXXX)"
@@ -19,6 +37,14 @@ xcodebuild -project "$project_root/BOLDWriter.xcodeproj" -scheme "BOLD Writer" -
 mkdir -p "$release_dir"
 ditto "$build_dir/Build/Products/Release/BOLD Writer.app" "$release_dir/BOLD Writer.app"
 cp "$project_root/LICENSE" "$release_dir/BOLD Writer.app/Contents/Resources/LICENSE.txt"
+third_party_dir="$release_dir/BOLD Writer.app/Contents/Resources/ThirdPartyNotices"
+mkdir -p "$third_party_dir"
+cp "$project_root/Docs/ThirdPartyAttribution.md" "$third_party_dir/ThirdPartyAttribution.md"
+cp "$project_root/Docs/ThirdParty/WordCraft-LICENSE-MIT.txt" "$third_party_dir/WordCraft-LICENSE-MIT.txt"
+cp "$project_root/Docs/ThirdParty/FabricJS-LICENSE.txt" "$third_party_dir/FabricJS-LICENSE.txt"
+cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/COPYING" "$third_party_dir/LAME-COPYING.txt"
+cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/LICENSE.upstream" "$third_party_dir/LAME-LICENSE.upstream"
+cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/PROVENANCE.md" "$third_party_dir/LAME-PROVENANCE.md"
 xattr -dr com.apple.FinderInfo "$release_dir/BOLD Writer.app" 2>/dev/null || true
 xattr -dr com.apple.ResourceFork "$release_dir/BOLD Writer.app" 2>/dev/null || true
 codesign --force --deep --sign - "$release_dir/BOLD Writer.app"
