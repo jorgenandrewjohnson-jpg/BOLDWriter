@@ -24,12 +24,20 @@ done
 
 input_path=""
 output_path=""
+app_path=""
+bundle_id=""
 for ((i=0; i<${#args[@]}; i++)); do
   case "${args[$i]}" in
+    --app) app_path="${args[$((i+1))]}" ;;
+    --bundle-id) bundle_id="${args[$((i+1))]}" ;;
     --input) input_path="${args[$((i+1))]}" ;;
     --output) output_path="${args[$((i+1))]}" ;;
   esac
 done
+if [[ "$bundle_id" == "com.boldwriter.app" || "$app_path" == "/Applications/BOLD Writer.app" ]]; then
+  echo "Refusing GUI mutation of the production BOLD Writer application; use a separately identified QA app bundle." >&2
+  exit 65
+fi
 if [[ ! -f "$input_path" && ! -d "$input_path" ]]; then
   echo "Input does not exist: $input_path" >&2; exit 66
 fi
