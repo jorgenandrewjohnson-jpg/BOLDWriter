@@ -38,13 +38,11 @@ mkdir -p "$release_dir"
 ditto "$build_dir/Build/Products/Release/BOLD Writer.app" "$release_dir/BOLD Writer.app"
 cp "$project_root/LICENSE" "$release_dir/BOLD Writer.app/Contents/Resources/LICENSE.txt"
 third_party_dir="$release_dir/BOLD Writer.app/Contents/Resources/ThirdPartyNotices"
-mkdir -p "$third_party_dir"
-cp "$project_root/Docs/ThirdPartyAttribution.md" "$third_party_dir/ThirdPartyAttribution.md"
-cp "$project_root/Docs/ThirdParty/WordCraft-LICENSE-MIT.txt" "$third_party_dir/WordCraft-LICENSE-MIT.txt"
-cp "$project_root/Docs/ThirdParty/FabricJS-LICENSE.txt" "$third_party_dir/FabricJS-LICENSE.txt"
-cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/COPYING" "$third_party_dir/LAME-COPYING.txt"
-cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/LICENSE.upstream" "$third_party_dir/LAME-LICENSE.upstream"
-cp "$project_root/Sources/BOLDWriter/AudioProduction/LAME/PROVENANCE.md" "$third_party_dir/LAME-PROVENANCE.md"
+for relative_path in "${required_release_files[@]:4}"; do
+    notice_destination="$third_party_dir/$relative_path"
+    mkdir -p "$(dirname "$notice_destination")"
+    cp "$project_root/$relative_path" "$notice_destination"
+done
 xattr -dr com.apple.FinderInfo "$release_dir/BOLD Writer.app" 2>/dev/null || true
 xattr -dr com.apple.ResourceFork "$release_dir/BOLD Writer.app" 2>/dev/null || true
 codesign --force --deep --sign - "$release_dir/BOLD Writer.app"
