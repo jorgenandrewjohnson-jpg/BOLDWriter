@@ -201,6 +201,12 @@ struct NativeGUIAcceptance {
         try ensureManuscriptWorkspace(timeout: 30)
         try clickNamed(["Insert"], identifierContains: [])
         try clickNamed(["Book Audit", "Check My Book"], identifierContains: [])
+        if activeElements().contains(where: {
+            [string($0, kAXDescriptionAttribute as String), string($0, kAXTitleAttribute as String)]
+                .contains("Layout & Print Readiness")
+        }) {
+            try clickNamed(["Layout & Print Readiness"], identifierContains: [])
+        }
         try waitForAccessibleText(prefix: "Book health status:", timeout: 240)
         try record("book-health-open", extra: ["evidence": "visible health report in native application"])
         try capture("02-book-health")
