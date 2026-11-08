@@ -23,6 +23,11 @@ if (( ${#missing_release_files[@]} )); then
     printf '  %s\n' "${missing_release_files[@]}" >&2
     exit 66
 fi
+if [[ "${BOLD_WRITER_BINARY_REVIEW_CONFIRMED:-}" != "1" ]]; then
+    echo "Binary packaging is blocked pending a reviewed static-LAME LGPL redistribution/relinking plan and release acceptance. See Docs/BinaryReleaseGate.md." >&2
+    echo "Only the release owner should set BOLD_WRITER_BINARY_REVIEW_CONFIRMED=1 after those checks are documented." >&2
+    exit 78
+fi
 release_dir="$project_root/Releases/BOLD-Writer-1.0"
 build_dir="$project_root/DerivedDataRelease"
 staging_dir="$(mktemp -d /private/tmp/boldwriter-dmg.XXXXXX)"

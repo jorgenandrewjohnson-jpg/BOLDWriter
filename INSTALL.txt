@@ -1,0 +1,29 @@
+BOLD Writer — source-build and installation status
+
+This repository does not currently offer a verified downloadable macOS app.
+The source snapshot is public for developers to build and test. BOLD Writer is
+still under development; use disposable copies of important documents.
+
+REQUIREMENTS
+- macOS 14 or later.
+- A full Xcode installation (the current engineering build uses Xcode 26.6).
+- Apple Silicon or Intel Mac. Both architectures are build targets; runtime
+  compatibility on other Macs still needs independent testing.
+
+BUILD FROM SOURCE
+1. Clone https://github.com/jorgenandrewjohnson-jpg/BOLDWriter.git.
+2. In the repository root, select full Xcode:
+   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+3. Run: Scripts/bold xcode-build
+4. The resulting development app is at
+   DerivedDataRelease/Build/Products/Release/BOLD Writer.app.
+
+Do not replace a running BOLD Writer installation while a document may have
+unsaved changes. A local/ad-hoc development signature is not Developer ID
+signing or Apple notarization. It is not a verified public installer.
+
+The source build uses vendored LAME under separate LGPL terms. See
+Docs/ThirdPartyAttribution.md and Docs/BinaryReleaseGate.md before distributing
+a compiled application. The top-level application source is MIT licensed.
+
+The current README and CONTRIBUTING.md contain build and focused-test commands.
