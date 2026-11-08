@@ -28,6 +28,7 @@ struct NativeGUIAcceptance {
     let expectedProofPages: Int
     let inspectOnly: Bool
     let manuscriptOnly: Bool
+    let freshProcessReopen: Bool
     let floatingImageKeyboard: Bool
     let proofOnly: Bool
     let automationScriptURL: URL?
@@ -61,6 +62,7 @@ struct NativeGUIAcceptance {
         let proofPages = Int(try value("--proof-pages", default: "391")) ?? 391
         let inspectOnly = args.contains("--inspect-only")
         let manuscriptOnly = args.contains("--manuscript-only")
+        let freshProcessReopen = args.contains("--fresh-process-reopen")
         let floatingImageKeyboard = args.contains("--floating-image-keyboard")
         let proofOnly = args.contains("--proof-only")
         let automationScript = args.firstIndex(of: "--automation-script").flatMap { args.indices.contains($0 + 1) ? URL(fileURLWithPath: args[$0 + 1]).standardizedFileURL : nil }
@@ -69,6 +71,7 @@ struct NativeGUIAcceptance {
                                          inputURL: input, outputURL: output, timeout: seconds,
                                          expectedProofPages: proofPages,
                                          inspectOnly: inspectOnly, manuscriptOnly: manuscriptOnly,
+                                         freshProcessReopen: freshProcessReopen,
                                          floatingImageKeyboard: floatingImageKeyboard,
                                          proofOnly: proofOnly,
                                          automationScriptURL: automationScript,
@@ -107,6 +110,10 @@ struct NativeGUIAcceptance {
         let actualBundleID = try plist("CFBundleIdentifier")
         guard actualBundleID == bundleID else {
             throw Failure(description: "Bundle ID mismatch: expected \(bundleID), got \(try plist("CFBundleIdentifier"))")
+        }
+        guard bundleID != "com.boldwriter.app",
+              appURL.path != "/Applications/BOLD Writer.app" else {
+            throw Failure(description: "Refusing to mutate the production application; use a separately identified QA bundle", category: "candidate_identity")
         }
         let actualRevision = try plist("BOLDWriterSourceRevision")
         guard actualRevision == expectedRevision else {
@@ -183,6 +190,9 @@ struct NativeGUIAcceptance {
         }
 
         try verifyEditorUndoRedoSaveReopen()
+        if freshProcessReopen {
+            try verifyFreshProcessReopen()
+        }
         if let automationScriptURL {
             try verifyAutomationStudioScript(at: automationScriptURL)
             try closeInputDocumentWindow(saveBeforeClose: false)
@@ -1086,6 +1096,71 @@ struct NativeGUIAcceptance {
                                                               "matchesBeforeEdit": reopenedHash == initialHash,
                                                               "reopenObservedSeconds": reopenObservedSeconds])
         try capture("01-manuscript-reopened")
+    }
+
+    mutating func verifyFreshProcessReopen() throws {
+        try ensureManuscriptWorkspace(timeout: 30)
+        let before = try editorText()
+        let expectedHash = sha256(Data(before.utf8))
+        let openWindows = windows()
+        guard openWindows.count == 1,
+              title(openWindows[0]).contains(inputURL.lastPathComponent) else {
+            throw Failure(description: "Fresh-process acceptance requires this QA instance to contain only the disposable document window; found \(windowSummary())", category: "fixture_precondition_missing")
+        }
+        let oldPID = pid
+        try closeInputDocumentWindow(saveBeforeClose: true)
+        if let candidate = runningApp() {
+            guard candidate.processIdentifier == oldPID, candidate.terminate() else {
+                throw Failure(description: "Could not request a normal quit of the exact QA process \(oldPID)", category: "application_state_transition")
+            }
+        }
+        let quitDeadline = Date().addingTimeInterval(30)
+        while Date() < quitDeadline,
+              let stillRunning = NSRunningApplication(processIdentifier: oldPID),
+              !stillRunning.isTerminated {
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+        guard NSRunningApplication(processIdentifier: oldPID)?.isTerminated ?? true else {
+            throw Failure(description: "QA process \(oldPID) did not quit normally; no force-quit was attempted", category: "application_state_transition")
+        }
+        eventLog.append(["scenarioID": scenarioID, "step": "qa-process-quit-normally",
+                         "oldPID": oldPID, "bundleID": bundleID, "bundlePath": appURL.path,
+                         "time": ISO8601DateFormatter().string(from: Date())])
+        pid = 0
+        appElement = nil
+        try startOrResolveApp()
+        guard pid != oldPID else {
+            throw Failure(description: "QA relaunch reused PID \(oldPID); cannot establish a fresh process", category: "candidate_identity")
+        }
+        try openDocument()
+        try waitForWindow(containing: inputURL.lastPathComponent, timeout: 60)
+        try focusInputDocumentWindow(timeout: 10)
+        try ensureManuscriptWorkspace(timeout: 30)
+        let reopenedHash = sha256(Data((try editorText()).utf8))
+        guard reopenedHash == expectedHash else {
+            throw Failure(description: "Fresh-process reopen changed accessible manuscript text: before \(expectedHash), after \(reopenedHash)", category: "document_persistence")
+        }
+        func artworkHashes(_ identity: [String: Any]) -> [String: String] {
+            let extensions: Set<String> = ["png", "jpg", "jpeg", "heic", "tif", "tiff", "pdf", "svg"]
+            let files = identity["files"] as? [[String: Any]] ?? []
+            return Dictionary(uniqueKeysWithValues: files.compactMap { file -> (String, String)? in
+                guard let path = file["path"] as? String,
+                      let hash = file["sha256"] as? String,
+                      extensions.contains((path as NSString).pathExtension.lowercased()) else { return nil }
+                return (path, hash)
+            })
+        }
+        let savedArtwork = artworkHashes(finalInputIdentity)
+        let reopenedArtwork = artworkHashes(try artifactIdentity(inputURL))
+        guard savedArtwork == reopenedArtwork else {
+            throw Failure(description: "Fresh-process reopen changed saved artwork bytes or paths", category: "document_persistence")
+        }
+        try record("fresh-process-reopen-verified", extra: ["oldPID": oldPID,
+                                                              "newPID": pid,
+                                                              "accessibleTextSHA256": reopenedHash,
+                                                              "artworkFilesVerified": savedArtwork.count,
+                                                              "savedPackageIdentity": finalInputIdentity])
+        try capture("01-manuscript-fresh-process-reopened")
     }
 
     mutating func closeInputDocumentWindow(saveBeforeClose: Bool) throws {

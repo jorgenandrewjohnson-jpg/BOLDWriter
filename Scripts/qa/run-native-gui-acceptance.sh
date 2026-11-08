@@ -10,6 +10,9 @@ Usage: run-native-gui-acceptance.sh \
   --app APP_BUNDLE --bundle-id BUNDLE_ID --revision SOURCE_REVISION \
   --input DISPOSABLE.boldwriter --output NEW_EVIDENCE_DIRECTORY [harness options]
 
+Add --fresh-process-reopen to require a normal QA-app quit, a new PID, and
+document-content verification after reopening. It refuses other open QA windows.
+
 The input filename must contain TEST-COPY-DO-NOT-USE-AS-ORIGINAL.
 The output directory must not exist. This command does not install or terminate apps.
 USAGE
