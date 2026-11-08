@@ -200,7 +200,7 @@ struct NativeGUIAcceptance {
         }
         try ensureManuscriptWorkspace(timeout: 30)
         try clickNamed(["Insert"], identifierContains: [])
-        try clickNamed(["Check My Book"], identifierContains: [])
+        try clickNamed(["Book Audit", "Check My Book"], identifierContains: [])
         try waitForAccessibleText(prefix: "Book health status:", timeout: 240)
         try record("book-health-open", extra: ["evidence": "visible health report in native application"])
         try capture("02-book-health")
