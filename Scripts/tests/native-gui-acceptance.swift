@@ -1032,10 +1032,8 @@ struct NativeGUIAcceptance {
     func activeElements() -> [AXUIElement] { activeWindow().map { allElements([$0]) } ?? [] }
 
     mutating func verifyEditorUndoRedoSaveReopen() throws {
-        guard let editor = activeElements().first(where: {
-            string($0, kAXRoleAttribute as String) == "AXTextArea"
-                && string($0, kAXDescriptionAttribute as String) == "Document editor"
-        }), let original = try copy(editor, kAXValueAttribute as String) as? String else {
+        guard let editor = visibleDocumentEditor(),
+              let original = try copy(editor, kAXValueAttribute as String) as? String else {
             throw Failure(description: "The manuscript editor and its accessible text value were not available")
         }
         let initialHash = SHA256.hash(data: Data(original.utf8)).map { String(format: "%02x", $0) }.joined()
@@ -1052,10 +1050,8 @@ struct NativeGUIAcceptance {
         let selected = AXUIElementSetAttributeValue(editor, kAXSelectedTextRangeAttribute as CFString, selectionValue)
         guard selected == .success else { throw Failure(description: "Could not place the insertion point at manuscript end (AXError \(selected.rawValue))") }
         let marker = " BOLD-GUI-UNDO-REDO-\(UUID().uuidString)"
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(marker, forType: .string)
         let firstEditStart = ProcessInfo.processInfo.systemUptime
-        try hotkey(key: 9, flags: .maskCommand)
+        try typeText(marker)
         try waitForEditorText(contains: marker, present: true, timeout: 10)
         try record("first-accepted-edit", extra: ["marker": marker,
                                                     "latencySeconds": ProcessInfo.processInfo.systemUptime - firstEditStart,
@@ -1246,6 +1242,27 @@ struct NativeGUIAcceptance {
         }
         down.post(tap: .cghidEventTap); up.post(tap: .cghidEventTap)
         Thread.sleep(forTimeInterval: 0.15)
+    }
+
+    func visibleDocumentEditor() -> AXUIElement? {
+        guard let window = activeWindow(),
+              let position = try? copy(window, kAXPositionAttribute as String),
+              let size = try? copy(window, kAXSizeAttribute as String) else { return nil }
+        var origin = CGPoint.zero, dimensions = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+              AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return nil }
+        let windowFrame = CGRect(origin: origin, size: dimensions)
+        return activeElements().first { element in
+            guard string(element, kAXRoleAttribute as String) == "AXTextArea",
+                  string(element, kAXDescriptionAttribute as String) == "Document editor",
+                  let position = try? copy(element, kAXPositionAttribute as String),
+                  let size = try? copy(element, kAXSizeAttribute as String) else { return false }
+            var origin = CGPoint.zero, dimensions = CGSize.zero
+            guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+                  AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return false }
+            let visible = CGRect(origin: origin, size: dimensions).intersection(windowFrame)
+            return !visible.isNull && visible.width > 8 && visible.height > 8
+        }
     }
 
     mutating func waitForEditorText(contains marker: String, present: Bool, timeout seconds: TimeInterval) throws {
@@ -1495,7 +1512,20 @@ struct NativeGUIAcceptance {
         let field = try waitForElement(identifier: "PathTextField", timeout: 10)
         let setError = AXUIElementSetAttributeValue(field, kAXValueAttribute as CFString, inputURL.path as CFTypeRef)
         guard setError == .success else { throw Failure(description: "Could not set the native Go to Folder path field (AXError \(setError.rawValue))") }
+        let selectionDeadline = Date().addingTimeInterval(10)
+        while Date() < selectionDeadline && !allElements(windows()).contains(where: {
+            string($0, "AXIdentifier").contains(inputURL.lastPathComponent)
+        }) {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
         try hotkey(key: 36, flags: [])
+        let sheetDeadline = Date().addingTimeInterval(3)
+        while Date() < sheetDeadline && windows().contains(where: { string($0, "AXIdentifier") == "GoToWindow" }) {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        if windows().contains(where: { string($0, "AXIdentifier") == "GoToWindow" }) {
+            try hotkey(key: 36, flags: [])
+        }
         _ = try waitForElement(identifier: "OKButton", timeout: 15)
         let selected = allElements(windows()).contains {
             [string($0, kAXTitleAttribute as String), string($0, kAXDescriptionAttribute as String),
