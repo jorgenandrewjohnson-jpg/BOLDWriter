@@ -23,7 +23,7 @@ The full test suite has previously used excessive memory in one process. Start w
 
 ## Source and document safety
 
-- Use synthetic or redistribution-cleared fixtures. Never commit a private manuscript, unpublished illustration, credential, personal information, or local QA output.
+- Use synthetic or redistribution-cleared fixtures. Never commit a private manuscript, unpublished illustration, credential, personal information, or local QA output. See the [synthetic fixture guide](Docs/SyntheticFixtures.md) for choosing or creating one and for the package checks that must pass before it is committed.
 - Preserve original DOCX bytes. Test imports and exports on copies, including native save, close, reopen, and structural checks where relevant.
 - Keep the manuscript model authoritative. Cover and 3D work should consume the real project data rather than introduce a second document state.
 - Review dependencies and licenses before adding source. Record the upstream commit, file paths, license, adaptation, and attribution. Do not copy GPL/AGPL code into the MIT application without a deliberate, reviewed licensing decision.
