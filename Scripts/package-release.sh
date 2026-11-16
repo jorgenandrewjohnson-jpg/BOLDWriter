@@ -5,6 +5,29 @@ if [[ -n "$(git -C "$project_root" status --porcelain)" ]]; then
     echo "Refusing to package a dirty repository; commit the intended source first." >&2
     exit 1
 fi
+required_release_files=(
+    LICENSE VERSION.txt INSTALL.txt ReleaseNotes.md
+    Docs/ThirdPartyAttribution.md
+    Docs/ThirdParty/WordCraft-LICENSE-MIT.txt
+    Docs/ThirdParty/FabricJS-LICENSE.txt
+    Sources/BOLDWriter/AudioProduction/LAME/COPYING
+    Sources/BOLDWriter/AudioProduction/LAME/LICENSE.upstream
+    Sources/BOLDWriter/AudioProduction/LAME/PROVENANCE.md
+)
+missing_release_files=()
+for relative_path in "${required_release_files[@]}"; do
+    [[ -f "$project_root/$relative_path" ]] || missing_release_files+=("$relative_path")
+done
+if (( ${#missing_release_files[@]} )); then
+    printf 'Release packaging prerequisites are missing; no build was started:\n' >&2
+    printf '  %s\n' "${missing_release_files[@]}" >&2
+    exit 66
+fi
+if [[ "${BOLD_WRITER_BINARY_REVIEW_CONFIRMED:-}" != "1" ]]; then
+    echo "Binary packaging is blocked pending a reviewed static-LAME LGPL redistribution/relinking plan and release acceptance. See Docs/BinaryReleaseGate.md." >&2
+    echo "Only the release owner should set BOLD_WRITER_BINARY_REVIEW_CONFIRMED=1 after those checks are documented." >&2
+    exit 78
+fi
 release_dir="$project_root/Releases/BOLD-Writer-1.0"
 build_dir="$project_root/DerivedDataRelease"
 staging_dir="$(mktemp -d /private/tmp/boldwriter-dmg.XXXXXX)"
@@ -19,6 +42,12 @@ xcodebuild -project "$project_root/BOLDWriter.xcodeproj" -scheme "BOLD Writer" -
 mkdir -p "$release_dir"
 ditto "$build_dir/Build/Products/Release/BOLD Writer.app" "$release_dir/BOLD Writer.app"
 cp "$project_root/LICENSE" "$release_dir/BOLD Writer.app/Contents/Resources/LICENSE.txt"
+third_party_dir="$release_dir/BOLD Writer.app/Contents/Resources/ThirdPartyNotices"
+for relative_path in "${required_release_files[@]:4}"; do
+    notice_destination="$third_party_dir/$relative_path"
+    mkdir -p "$(dirname "$notice_destination")"
+    cp "$project_root/$relative_path" "$notice_destination"
+done
 xattr -dr com.apple.FinderInfo "$release_dir/BOLD Writer.app" 2>/dev/null || true
 xattr -dr com.apple.ResourceFork "$release_dir/BOLD Writer.app" 2>/dev/null || true
 codesign --force --deep --sign - "$release_dir/BOLD Writer.app"

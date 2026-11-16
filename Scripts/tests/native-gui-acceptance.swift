@@ -28,6 +28,7 @@ struct NativeGUIAcceptance {
     let expectedProofPages: Int
     let inspectOnly: Bool
     let manuscriptOnly: Bool
+    let freshProcessReopen: Bool
     let floatingImageKeyboard: Bool
     let proofOnly: Bool
     let automationScriptURL: URL?
@@ -61,6 +62,7 @@ struct NativeGUIAcceptance {
         let proofPages = Int(try value("--proof-pages", default: "391")) ?? 391
         let inspectOnly = args.contains("--inspect-only")
         let manuscriptOnly = args.contains("--manuscript-only")
+        let freshProcessReopen = args.contains("--fresh-process-reopen")
         let floatingImageKeyboard = args.contains("--floating-image-keyboard")
         let proofOnly = args.contains("--proof-only")
         let automationScript = args.firstIndex(of: "--automation-script").flatMap { args.indices.contains($0 + 1) ? URL(fileURLWithPath: args[$0 + 1]).standardizedFileURL : nil }
@@ -69,6 +71,7 @@ struct NativeGUIAcceptance {
                                          inputURL: input, outputURL: output, timeout: seconds,
                                          expectedProofPages: proofPages,
                                          inspectOnly: inspectOnly, manuscriptOnly: manuscriptOnly,
+                                         freshProcessReopen: freshProcessReopen,
                                          floatingImageKeyboard: floatingImageKeyboard,
                                          proofOnly: proofOnly,
                                          automationScriptURL: automationScript,
@@ -107,6 +110,10 @@ struct NativeGUIAcceptance {
         let actualBundleID = try plist("CFBundleIdentifier")
         guard actualBundleID == bundleID else {
             throw Failure(description: "Bundle ID mismatch: expected \(bundleID), got \(try plist("CFBundleIdentifier"))")
+        }
+        guard bundleID != "com.boldwriter.app",
+              appURL.path != "/Applications/BOLD Writer.app" else {
+            throw Failure(description: "Refusing to mutate the production application; use a separately identified QA bundle", category: "candidate_identity")
         }
         let actualRevision = try plist("BOLDWriterSourceRevision")
         guard actualRevision == expectedRevision else {
@@ -183,6 +190,9 @@ struct NativeGUIAcceptance {
         }
 
         try verifyEditorUndoRedoSaveReopen()
+        if freshProcessReopen {
+            try verifyFreshProcessReopen()
+        }
         if let automationScriptURL {
             try verifyAutomationStudioScript(at: automationScriptURL)
             try closeInputDocumentWindow(saveBeforeClose: false)
@@ -200,7 +210,13 @@ struct NativeGUIAcceptance {
         }
         try ensureManuscriptWorkspace(timeout: 30)
         try clickNamed(["Insert"], identifierContains: [])
-        try clickNamed(["Check My Book"], identifierContains: [])
+        try clickNamed(["Book Audit", "Check My Book"], identifierContains: [])
+        if activeElements().contains(where: {
+            [string($0, kAXDescriptionAttribute as String), string($0, kAXTitleAttribute as String)]
+                .contains("Layout & Print Readiness")
+        }) {
+            try clickNamed(["Layout & Print Readiness"], identifierContains: [])
+        }
         try waitForAccessibleText(prefix: "Book health status:", timeout: 240)
         try record("book-health-open", extra: ["evidence": "visible health report in native application"])
         try capture("02-book-health")
@@ -1016,10 +1032,8 @@ struct NativeGUIAcceptance {
     func activeElements() -> [AXUIElement] { activeWindow().map { allElements([$0]) } ?? [] }
 
     mutating func verifyEditorUndoRedoSaveReopen() throws {
-        guard let editor = activeElements().first(where: {
-            string($0, kAXRoleAttribute as String) == "AXTextArea"
-                && string($0, kAXDescriptionAttribute as String) == "Document editor"
-        }), let original = try copy(editor, kAXValueAttribute as String) as? String else {
+        guard let editor = visibleDocumentEditor(),
+              let original = try copy(editor, kAXValueAttribute as String) as? String else {
             throw Failure(description: "The manuscript editor and its accessible text value were not available")
         }
         let initialHash = SHA256.hash(data: Data(original.utf8)).map { String(format: "%02x", $0) }.joined()
@@ -1036,10 +1050,8 @@ struct NativeGUIAcceptance {
         let selected = AXUIElementSetAttributeValue(editor, kAXSelectedTextRangeAttribute as CFString, selectionValue)
         guard selected == .success else { throw Failure(description: "Could not place the insertion point at manuscript end (AXError \(selected.rawValue))") }
         let marker = " BOLD-GUI-UNDO-REDO-\(UUID().uuidString)"
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(marker, forType: .string)
         let firstEditStart = ProcessInfo.processInfo.systemUptime
-        try hotkey(key: 9, flags: .maskCommand)
+        try typeText(marker)
         try waitForEditorText(contains: marker, present: true, timeout: 10)
         try record("first-accepted-edit", extra: ["marker": marker,
                                                     "latencySeconds": ProcessInfo.processInfo.systemUptime - firstEditStart,
@@ -1080,6 +1092,71 @@ struct NativeGUIAcceptance {
                                                               "matchesBeforeEdit": reopenedHash == initialHash,
                                                               "reopenObservedSeconds": reopenObservedSeconds])
         try capture("01-manuscript-reopened")
+    }
+
+    mutating func verifyFreshProcessReopen() throws {
+        try ensureManuscriptWorkspace(timeout: 30)
+        let before = try editorText()
+        let expectedHash = sha256(Data(before.utf8))
+        let openWindows = windows()
+        guard openWindows.count == 1,
+              title(openWindows[0]).contains(inputURL.lastPathComponent) else {
+            throw Failure(description: "Fresh-process acceptance requires this QA instance to contain only the disposable document window; found \(windowSummary())", category: "fixture_precondition_missing")
+        }
+        let oldPID = pid
+        try closeInputDocumentWindow(saveBeforeClose: true)
+        if let candidate = runningApp() {
+            guard candidate.processIdentifier == oldPID, candidate.terminate() else {
+                throw Failure(description: "Could not request a normal quit of the exact QA process \(oldPID)", category: "application_state_transition")
+            }
+        }
+        let quitDeadline = Date().addingTimeInterval(30)
+        while Date() < quitDeadline,
+              let stillRunning = NSRunningApplication(processIdentifier: oldPID),
+              !stillRunning.isTerminated {
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+        guard NSRunningApplication(processIdentifier: oldPID)?.isTerminated ?? true else {
+            throw Failure(description: "QA process \(oldPID) did not quit normally; no force-quit was attempted", category: "application_state_transition")
+        }
+        eventLog.append(["scenarioID": scenarioID, "step": "qa-process-quit-normally",
+                         "oldPID": oldPID, "bundleID": bundleID, "bundlePath": appURL.path,
+                         "time": ISO8601DateFormatter().string(from: Date())])
+        pid = 0
+        appElement = nil
+        try startOrResolveApp()
+        guard pid != oldPID else {
+            throw Failure(description: "QA relaunch reused PID \(oldPID); cannot establish a fresh process", category: "candidate_identity")
+        }
+        try openDocument()
+        try waitForWindow(containing: inputURL.lastPathComponent, timeout: 60)
+        try focusInputDocumentWindow(timeout: 10)
+        try ensureManuscriptWorkspace(timeout: 30)
+        let reopenedHash = sha256(Data((try editorText()).utf8))
+        guard reopenedHash == expectedHash else {
+            throw Failure(description: "Fresh-process reopen changed accessible manuscript text: before \(expectedHash), after \(reopenedHash)", category: "document_persistence")
+        }
+        func artworkHashes(_ identity: [String: Any]) -> [String: String] {
+            let extensions: Set<String> = ["png", "jpg", "jpeg", "heic", "tif", "tiff", "pdf", "svg"]
+            let files = identity["files"] as? [[String: Any]] ?? []
+            return Dictionary(uniqueKeysWithValues: files.compactMap { file -> (String, String)? in
+                guard let path = file["path"] as? String,
+                      let hash = file["sha256"] as? String,
+                      extensions.contains((path as NSString).pathExtension.lowercased()) else { return nil }
+                return (path, hash)
+            })
+        }
+        let savedArtwork = artworkHashes(finalInputIdentity)
+        let reopenedArtwork = artworkHashes(try artifactIdentity(inputURL))
+        guard savedArtwork == reopenedArtwork else {
+            throw Failure(description: "Fresh-process reopen changed saved artwork bytes or paths", category: "document_persistence")
+        }
+        try record("fresh-process-reopen-verified", extra: ["oldPID": oldPID,
+                                                              "newPID": pid,
+                                                              "accessibleTextSHA256": reopenedHash,
+                                                              "artworkFilesVerified": savedArtwork.count,
+                                                              "savedPackageIdentity": finalInputIdentity])
+        try capture("01-manuscript-fresh-process-reopened")
     }
 
     mutating func closeInputDocumentWindow(saveBeforeClose: Bool) throws {
@@ -1165,6 +1242,27 @@ struct NativeGUIAcceptance {
         }
         down.post(tap: .cghidEventTap); up.post(tap: .cghidEventTap)
         Thread.sleep(forTimeInterval: 0.15)
+    }
+
+    func visibleDocumentEditor() -> AXUIElement? {
+        guard let window = activeWindow(),
+              let position = try? copy(window, kAXPositionAttribute as String),
+              let size = try? copy(window, kAXSizeAttribute as String) else { return nil }
+        var origin = CGPoint.zero, dimensions = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+              AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return nil }
+        let windowFrame = CGRect(origin: origin, size: dimensions)
+        return activeElements().first { element in
+            guard string(element, kAXRoleAttribute as String) == "AXTextArea",
+                  string(element, kAXDescriptionAttribute as String) == "Document editor",
+                  let position = try? copy(element, kAXPositionAttribute as String),
+                  let size = try? copy(element, kAXSizeAttribute as String) else { return false }
+            var origin = CGPoint.zero, dimensions = CGSize.zero
+            guard AXValueGetValue(position as! AXValue, .cgPoint, &origin),
+                  AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return false }
+            let visible = CGRect(origin: origin, size: dimensions).intersection(windowFrame)
+            return !visible.isNull && visible.width > 8 && visible.height > 8
+        }
     }
 
     mutating func waitForEditorText(contains marker: String, present: Bool, timeout seconds: TimeInterval) throws {
@@ -1414,7 +1512,20 @@ struct NativeGUIAcceptance {
         let field = try waitForElement(identifier: "PathTextField", timeout: 10)
         let setError = AXUIElementSetAttributeValue(field, kAXValueAttribute as CFString, inputURL.path as CFTypeRef)
         guard setError == .success else { throw Failure(description: "Could not set the native Go to Folder path field (AXError \(setError.rawValue))") }
+        let selectionDeadline = Date().addingTimeInterval(10)
+        while Date() < selectionDeadline && !allElements(windows()).contains(where: {
+            string($0, "AXIdentifier").contains(inputURL.lastPathComponent)
+        }) {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
         try hotkey(key: 36, flags: [])
+        let sheetDeadline = Date().addingTimeInterval(3)
+        while Date() < sheetDeadline && windows().contains(where: { string($0, "AXIdentifier") == "GoToWindow" }) {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        if windows().contains(where: { string($0, "AXIdentifier") == "GoToWindow" }) {
+            try hotkey(key: 36, flags: [])
+        }
         _ = try waitForElement(identifier: "OKButton", timeout: 15)
         let selected = allElements(windows()).contains {
             [string($0, kAXTitleAttribute as String), string($0, kAXDescriptionAttribute as String),
