@@ -4,6 +4,74 @@ import XCTest
 @testable import BOLDWriter
 
 final class PersistenceTests: XCTestCase {
+    @MainActor
+    func testAutomaticRecoveryKeepsThreeGenerationsAndNeverChangesOriginal() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("Original.boldwriter")
+        let backups = root.appendingPathComponent("Recovery")
+        let original = BOLDWriterDocument()
+        let (text, imageBytes) = try makeAttachedText()
+        original.replaceText(with: text)
+        try BOLDWriterDocument.packageWrapper(text: original.text, metadata: original.metadata)
+            .write(to: source, options: .atomic, originalContentsURL: nil)
+        let opened = try BOLDWriterDocument(fileWrapper: FileWrapper(url: source), contentType: .boldWriterDocument)
+        XCTAssertNil(try opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: backups))
+        var latest: URL?
+        for generation in 1...5 {
+            let edited = NSMutableAttributedString(attributedString: opened.text)
+            edited.append(NSAttributedString(string: " Edit \(generation)"))
+            opened.replaceText(with: edited)
+            opened.metadata.notes = "Metadata \(generation)"
+            latest = try XCTUnwrap(opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: backups))
+            XCTAssertNil(try opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: backups))
+        }
+        let url = try XCTUnwrap(latest)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil).count, 3)
+        let recovered = try BOLDWriterDocument(fileWrapper: FileWrapper(url: url), contentType: .boldWriterDocument)
+        XCTAssertEqual(recovered.text.string, opened.text.string)
+        XCTAssertEqual(recovered.metadata.notes, "Metadata 5")
+        let location = (recovered.text.string as NSString).range(of: "\u{FFFC}").location
+        let attachment = try XCTUnwrap(recovered.text.attribute(.attachment, at: location, effectiveRange: nil) as? NSTextAttachment)
+        XCTAssertEqual(attachment.fileWrapper?.regularFileContents, imageBytes)
+        let untouched = try BOLDWriterDocument(fileWrapper: FileWrapper(url: source), contentType: .boldWriterDocument)
+        XCTAssertEqual(untouched.text.string, original.text.string)
+        opened.metadata.notes = "Metadata-only change"
+        let metadataOnly = try XCTUnwrap(opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: backups))
+        XCTAssertEqual(try BOLDWriterDocument(fileWrapper: FileWrapper(url: metadataOnly), contentType: .boldWriterDocument).metadata.notes, "Metadata-only change")
+        opened.metadata.notes = "Retry after failure"
+        let invalidRoot = root.appendingPathComponent("not-a-directory")
+        try Data("blocked".utf8).write(to: invalidRoot)
+        XCTAssertThrowsError(try opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: invalidRoot))
+        XCTAssertNotNil(try opened.writeAutomaticRecoveryIfNeeded(sourceURL: source, root: backups))
+    }
+
+    @MainActor
+    func testCreateDisposableIllustratedLongGUIFixtures() throws {
+        guard let output = ProcessInfo.processInfo.environment["BOLD_GUI_LONG_FIXTURE_OUTPUT"] else {
+            throw XCTSkip("Explicit disposable GUI fixture output not requested")
+        }
+        let root = URL(fileURLWithPath: output, isDirectory: true)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.path))
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let (attached, _) = try makeAttachedText()
+        for pages in [500, 1000] {
+            let body = NSMutableAttributedString()
+            let font = NSFont.systemFont(ofSize: 12)
+            for page in 1...pages {
+                body.append(NSAttributedString(string: "Synthetic page \(page) of \(pages)\n" + String(repeating: "This is a disposable manuscript paragraph for the editor. ", count: 18) + "\n", attributes: [.font: font]))
+                if page % 25 == 0 { body.append(attached) }
+                if page < pages { body.append(NSAttributedString(string: "\n\u{000C}\n", attributes: [.font: font])) }
+            }
+            var metadata = DocumentMetadata(title: "Synthetic \(pages)-page GUI fixture")
+            metadata.page = PageSettings(paper: .letter, topMargin: 54, bottomMargin: 54, leftMargin: 54, rightMargin: 54)
+            let url = root.appendingPathComponent("\(pages)-page-TEST-COPY-DO-NOT-USE-AS-ORIGINAL.boldwriter", isDirectory: true)
+            try BOLDWriterDocument.packageWrapper(text: body, metadata: metadata).write(to: url, options: .atomic, originalContentsURL: nil)
+        }
+    }
+
+
     func testNativeReopenRejectsMissingOrInvalidPackageComponents() throws {
         let document = BOLDWriterDocument()
         let package = try BOLDWriterDocument.packageWrapper(text: NSAttributedString(string: "Preserve me"), metadata: document.metadata)

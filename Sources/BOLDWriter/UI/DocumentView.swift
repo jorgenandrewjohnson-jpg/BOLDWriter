@@ -500,6 +500,24 @@ struct DocumentView: View {
         .sheet(isPresented: Binding(get: { !didShowWelcome }, set: { if !$0 { didShowWelcome = true } })) {
             WelcomeView(showHelp: $showHelp).interactiveDismissDisabled()
         }
+        .task(id: sourceURL) {
+            // A periodic checkpoint cannot be starved by continuous typing.
+            // Native autosave remains independent; recovery never overwrites it.
+            var reportedFailure = false
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(30)) } catch { return }
+                guard !Task.isCancelled else { return }
+                do {
+                    _ = try document.writeAutomaticRecoveryIfNeeded(sourceURL: sourceURL)
+                    reportedFailure = false
+                } catch {
+                    if !reportedFailure {
+                        document.lastErrorMessage = "Automatic manuscript recovery could not be saved: \(error.localizedDescription). Your original document has not been overwritten."
+                        reportedFailure = true
+                    }
+                }
+            }
+        }
         .task(id: document.revisionID) {
             let openingTextLength =
                 document.text.length

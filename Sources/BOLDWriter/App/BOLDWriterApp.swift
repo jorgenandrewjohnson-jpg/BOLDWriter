@@ -86,6 +86,17 @@ private struct KnowledgeLibraryCommands: Commands {
         CommandGroup(after: .newItem) {
             Button("Knowledge Library") { openWindow(id: "knowledge-library") }
                 .keyboardShortcut("k", modifiers: [.command, .shift])
+            Button("Open Manuscript Recovery Folder") {
+                do {
+                    let folder = try ManuscriptRecovery.recoveryRoot()
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true,
+                                                            attributes: [.posixPermissions: 0o700])
+                    NSWorkspace.shared.open(folder)
+                } catch {
+                    NSAlert(error: error).runModal()
+                }
+            }
+
         }
     }
 }

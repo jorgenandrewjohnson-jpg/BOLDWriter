@@ -3,6 +3,16 @@ import XCTest
 @testable import BOLDWriter
 
 final class DocumentAnalysisTests: XCTestCase {
+    func testStreamingStatisticsMatchPreviousUnicodeSemantics() {
+        for string in ["", "a", "\n", "a\n\n", "a\r\nb", "👩‍👩‍👧‍👦 café! 東京", "one—two\tthree", "e\u{301}"] {
+            let stats = DocumentAnalysis.statistics(for: string)
+            XCTAssertEqual(stats.words, string.split { $0.isWhitespace || $0.isPunctuation }.count)
+            XCTAssertEqual(stats.characters, string.count)
+            XCTAssertEqual(stats.charactersWithoutSpaces, string.filter { !$0.isWhitespace }.count)
+            XCTAssertEqual(stats.paragraphs, string.isEmpty ? 0 : string.split(separator: "\n", omittingEmptySubsequences: false).count)
+        }
+    }
+
     func testOutlineExcludesTitleAndFindsHeadingAfterPageBreak() {
         let text = NSMutableAttributedString(string: "Book Title\nBody\n\u{000C}Appendix\n", attributes: [.font: NSFont.boldSystemFont(ofSize: 24)])
         text.addAttribute(.boldWriterStyle, value: WriterStyle.title.rawValue, range: NSRange(location: 0, length: 11))
