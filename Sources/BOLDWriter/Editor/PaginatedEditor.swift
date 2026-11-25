@@ -164,9 +164,17 @@ final class PaginatedEditor: NSView {
         let old = floatingImages
         floatingImages = images
         resolvedAnchorSnapshots.removeAll(keepingCapacity: true)
-        floatingImageCache = Dictionary(uniqueKeysWithValues: images.compactMap { image in
-            image.displayImage().map { (image.id, $0) }
-        })
+        let previousByID = Dictionary(uniqueKeysWithValues: old.map { ($0.id, $0) })
+        var nextCache: [UUID: NSImage] = [:]
+        for image in images {
+            if let previous = previousByID[image.id], previous.imageData == image.imageData,
+               previous.sourceCrop == image.sourceCrop, let cached = floatingImageCache[image.id] {
+                nextCache[image.id] = cached
+            } else {
+                nextCache[image.id] = image.displayImage()
+            }
+        }
+        floatingImageCache = nextCache
         if let selectedFloatingImageID, !images.contains(where: { $0.id == selectedFloatingImageID }) {
             self.selectedFloatingImageID = nil
             floatingImageKeyboardFocusID = nil
@@ -203,7 +211,7 @@ final class PaginatedEditor: NSView {
         let right = Dictionary(uniqueKeysWithValues: rhs.map { ($0.id, $0) })
         guard left.count == right.count else { return false }
         for (id, a) in left {
-            guard let b = right[id], a.assetName == b.assetName, a.imageData.count == b.imageData.count,
+            guard let b = right[id], a.assetName == b.assetName, a.imageData == b.imageData,
                   a.pageIndex == b.pageIndex, a.anchor == b.anchor, a.anchorLocation == b.anchorLocation,
                   a.anchorOffsetX == b.anchorOffsetX, a.anchorOffsetY == b.anchorOffsetY,
                   a.horizontalPositionReference == b.horizontalPositionReference,
@@ -708,6 +716,7 @@ final class PaginatedEditor: NSView {
     func setEditingEnabled(
         _ enabled: Bool
     ) {
+        guard editingEnabled != enabled else { return }
         editingEnabled =
             enabled
 
@@ -733,6 +742,7 @@ final class PaginatedEditor: NSView {
     func setShowsInvisibleCharacters(
         _ visible: Bool
     ) {
+        guard flow.manager.showsInvisibleCharacters != visible else { return }
         for view in pages {
             view.layoutManager?
                 .showsInvisibleCharacters =
@@ -757,6 +767,7 @@ final class PaginatedEditor: NSView {
     func setShowsLineNumbers(
         _ visible: Bool
     ) {
+        guard showsLineNumbers != visible else { return }
         showsLineNumbers =
             visible
 

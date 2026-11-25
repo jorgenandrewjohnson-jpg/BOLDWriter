@@ -73,12 +73,26 @@ enum LargeDocumentPolicy {
 
 enum DocumentAnalysis {
     static func statistics(for string: String, headingCount: Int = 0) -> DocumentStatistics {
-        let words = string.split { $0.isWhitespace || $0.isPunctuation }.count
-        let paragraphs = string.isEmpty ? 0 : string.split(separator: "\n", omittingEmptySubsequences: false).count
+        // One pass, no temporary word/paragraph arrays or filtered String.
+        var words = 0, characters = 0, nonWhitespace = 0, paragraphs = 0
+        var inWord = false
+        for character in string {
+            if characters == 0 { paragraphs = 1 }
+            characters += 1
+            let whitespace = character.isWhitespace
+            if !whitespace { nonWhitespace += 1 }
+            if character == "\n" { paragraphs += 1 }
+            if whitespace || character.isPunctuation {
+                inWord = false
+            } else if !inWord {
+                words += 1
+                inWord = true
+            }
+        }
         return DocumentStatistics(
             words: words,
-            characters: string.count,
-            charactersWithoutSpaces: string.filter { !$0.isWhitespace }.count,
+            characters: characters,
+            charactersWithoutSpaces: nonWhitespace,
             paragraphs: paragraphs,
             estimatedMinutes: words == 0 ? 0 : max(1, Int(ceil(Double(words) / 225.0))),
             headings: headingCount

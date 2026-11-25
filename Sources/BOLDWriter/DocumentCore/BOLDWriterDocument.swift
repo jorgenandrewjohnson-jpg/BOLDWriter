@@ -112,8 +112,28 @@ final class BOLDWriterDocument: ReferenceFileDocument {
 
     typealias Snapshot = WriterDocumentSnapshot
 
-    @Published var text: NSAttributedString
-    @Published var metadata: DocumentMetadata
+    @Published var text: NSAttributedString {
+        didSet { recoveryGeneration &+= 1 }
+    }
+    @Published var metadata: DocumentMetadata {
+        didSet { recoveryGeneration &+= 1 }
+    }
+    private(set) var recoveryGeneration: UInt64 = 0
+    let recoverySessionID = UUID()
+    private var lastRecoveryGeneration: UInt64 = 0
+
+    /// Write only changed manuscripts; the original is never a backup target.
+    @MainActor
+    @discardableResult
+    func writeAutomaticRecoveryIfNeeded(sourceURL: URL?, root: URL? = nil) throws -> URL? {
+        let generation = recoveryGeneration
+        guard generation != lastRecoveryGeneration else { return nil }
+        let destination = try ManuscriptRecovery.save(text: text, metadata: metadata,
+                                                      sourceURL: sourceURL, sessionID: recoverySessionID,
+                                                      root: root)
+        lastRecoveryGeneration = generation
+        return destination
+    }
     @Published private(set) var revisionID = UUID()
     @Published var lastErrorMessage: String?
     var manuscriptReplacementRevisionID: UUID?
@@ -200,6 +220,7 @@ final class BOLDWriterDocument: ReferenceFileDocument {
                         ?? "Imported Image"
                 )
 
+            lastRecoveryGeneration = recoveryGeneration
             return
         }
 
@@ -281,6 +302,7 @@ final class BOLDWriterDocument: ReferenceFileDocument {
             metadata =
                 DocumentMetadata()
 
+            lastRecoveryGeneration = recoveryGeneration
             return
         }
 
@@ -459,13 +481,13 @@ final class BOLDWriterDocument: ReferenceFileDocument {
         } else {
             throw CocoaError(.fileReadCorruptFile)
         }
+        lastRecoveryGeneration = recoveryGeneration
     }
 
     func snapshot(contentType: UTType) throws -> WriterDocumentSnapshot {
         try Self.validateWritableContentType(contentType)
         var current = metadata
         current.modifiedAt = Date()
-        current.styleRuns = Self.captureStyleRuns(in: text)
         return WriterDocumentSnapshot(text: text.copy() as! NSAttributedString, metadata: current)
     }
 

@@ -66,3 +66,41 @@ enum FloatingImageRecovery {
         for stale in urls.dropFirst(count) { try? FileManager.default.removeItem(at: stale) }
     }
 }
+
+/// Full, independently openable native backups, separate from the live file.
+/// Each successful generation has its own atomic package and older generations
+/// are pruned only after the new package is safely written.
+enum ManuscriptRecovery {
+    static func recoveryRoot(root: URL? = nil) throws -> URL {
+        if let root { return root }
+        let support = try FileManager.default.url(for: .applicationSupportDirectory,
+                                                   in: .userDomainMask, appropriateFor: nil, create: true)
+        let identity = Bundle.main.bundleIdentifier ?? "BOLDWriter"
+        return support.appendingPathComponent("BOLD Writer/Manuscript Recovery", isDirectory: true)
+            .appendingPathComponent(identity, isDirectory: true)
+    }
+
+    static func save(text: NSAttributedString, metadata: DocumentMetadata,
+                     sourceURL: URL?, sessionID: UUID, root: URL? = nil) throws -> URL {
+        let fm = FileManager.default
+        let root = try recoveryRoot(root: root)
+        let identity = sourceURL?.standardizedFileURL.path ?? sessionID.uuidString
+        let digest = SHA256.hash(data: Data(identity.utf8)).map { String(format: "%02x", $0) }.joined()
+        let name = String((sourceURL?.deletingPathExtension().lastPathComponent ?? "Untitled").prefix(80))
+        let folder = root.appendingPathComponent(name + "-" + digest, isDirectory: true)
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true,
+                               attributes: [.posixPermissions: 0o700])
+        let stamp = String(format: "%020.0f", Date().timeIntervalSince1970 * 1_000_000)
+        let destination = folder.appendingPathComponent(stamp + "-" + UUID().uuidString + ".boldwriter", isDirectory: true)
+        let package = try BOLDWriterDocument.packageWrapper(text: text, metadata: metadata)
+        try package.write(to: destination, options: .atomic, originalContentsURL: nil)
+        // Retain three independently openable generations. Failure to prune
+        // must not turn an already durable checkpoint into a failed save.
+        if let files = try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+            let older = files.filter { $0.pathExtension == "boldwriter" && $0.lastPathComponent != destination.lastPathComponent }
+                .sorted { $0.lastPathComponent > $1.lastPathComponent }
+            for stale in older.dropFirst(2) { try? fm.removeItem(at: stale) }
+        }
+        return destination
+    }
+}
