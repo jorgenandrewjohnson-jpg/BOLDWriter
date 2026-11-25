@@ -4,6 +4,74 @@ import XCTest
 @testable import BOLDWriter
 
 final class PersistenceTests: XCTestCase {
+    func testNativeReopenRejectsMissingOrInvalidPackageComponents() throws {
+        let document = BOLDWriterDocument()
+        let package = try BOLDWriterDocument.packageWrapper(text: NSAttributedString(string: "Preserve me"), metadata: document.metadata)
+        let children = try XCTUnwrap(package.fileWrappers)
+        let content = try XCTUnwrap(children["content.rtfd"])
+        let metadata = try XCTUnwrap(children["metadata.json"])
+        let malformed = [
+            FileWrapper(regularFileWithContents: Data("{\\rtf1 mislabeled}".utf8)),
+            FileWrapper(directoryWithFileWrappers: ["metadata.json": metadata]),
+            FileWrapper(directoryWithFileWrappers: ["content.rtfd": content]),
+            FileWrapper(directoryWithFileWrappers: ["content.rtfd": content, "metadata.json": FileWrapper(directoryWithFileWrappers: [:])])
+        ]
+        for wrapper in malformed {
+            XCTAssertThrowsError(try BOLDWriterDocument(fileWrapper: wrapper, contentType: .boldWriterDocument))
+        }
+        // Legacy RTF-only packages can still be recovered and upgraded.
+        let legacyRTF = try NSAttributedString(string: "Legacy").data(from: NSRange(location: 0, length: 6), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+        let legacy = FileWrapper(directoryWithFileWrappers: ["content.rtf": FileWrapper(regularFileWithContents: legacyRTF)])
+        XCTAssertEqual(try BOLDWriterDocument(fileWrapper: legacy, contentType: .boldWriterDocument).text.string, "Legacy")
+    }
+
+    func testLongIllustratedDocumentEditsAndRepeatedDiskReopen() throws {
+        let document = BOLDWriterDocument()
+        let (text, imageBytes) = try makeAttachedText()
+        let body = String(repeating: "A synthetic manuscript paragraph with café and 東京.\n", count: 10_000)
+        text.append(NSAttributedString(string: "\n" + body + "UNIQUE END", attributes: [.font: NSFont.systemFont(ofSize: 15)]))
+        document.replaceText(with: text)
+        let marker = (text.string as NSString).range(of: "UNIQUE END").location
+        document.metadata.title = "Disposable long manuscript"
+        document.metadata.bookmarks = [DocumentBookmark(name: "End", location: marker)]
+        document.metadata.comments = [DocumentComment(text: "Keep", location: marker, length: 6)]
+        document.metadata.sections = [DocumentSection(location: 0, page: document.metadata.page), DocumentSection(location: marker, page: PageSettings(paper: .a4), breakType: .continuous)]
+        document.metadata.floatingImages = [FloatingImage(assetName: "floating.png", imageData: imageBytes, anchor: .character, anchorLocation: marker, x: 10, y: 10, width: 20, height: 20)]
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("long.boldwriter", isDirectory: true)
+        var active = document
+        var expectedMarker = marker
+        for cycle in 0..<3 {
+            let edited = NSMutableAttributedString(attributedString: active.text)
+            let offset = [0, edited.length / 2, edited.length][cycle]
+            let insertion = "EDIT\n"
+            edited.insert(NSAttributedString(string: insertion, attributes: [.font: NSFont.systemFont(ofSize: 15)]), at: offset)
+            if offset <= expectedMarker { expectedMarker += (insertion as NSString).length }
+            active.replaceEditedText(with: edited)
+            XCTAssertEqual(active.metadata.bookmarks.first?.location, expectedMarker)
+            XCTAssertEqual(active.metadata.comments.first?.location, expectedMarker)
+            XCTAssertEqual(active.metadata.sections?.last?.location, expectedMarker)
+            XCTAssertEqual(active.metadata.sections?.last?.breakType, .continuous)
+            XCTAssertEqual(active.metadata.floatingImages?.first?.anchorLocation, expectedMarker)
+            let saved = try BOLDWriterDocument.packageWrapper(text: active.text, metadata: active.metadata)
+            try saved.write(to: url, options: .atomic, originalContentsURL: nil)
+            let reopened = try BOLDWriterDocument(fileWrapper: FileWrapper(url: url), contentType: .boldWriterDocument)
+            XCTAssertEqual(reopened.text.string, edited.string)
+            XCTAssertEqual(reopened.metadata.bookmarks, active.metadata.bookmarks)
+            XCTAssertEqual(reopened.metadata.comments, active.metadata.comments)
+            XCTAssertEqual(reopened.metadata.sections, active.metadata.sections)
+            XCTAssertEqual(reopened.metadata.floatingImages?.first?.anchorLocation, expectedMarker)
+            XCTAssertEqual(reopened.metadata.floatingImages?.first?.imageData, imageBytes)
+            let imageIndex = (reopened.text.string as NSString).range(of: "\u{FFFC}").location
+            let attachment = try XCTUnwrap(reopened.text.attribute(.attachment, at: imageIndex, effectiveRange: nil) as? NSTextAttachment)
+            XCTAssertEqual(attachment.fileWrapper?.regularFileContents, imageBytes)
+            active = reopened
+        }
+    }
+
+
     func testNativePackagePreservesRichTextAndMetadata() throws {
         let text = NSMutableAttributedString(string: "A styled heading\nBody")
         text.addAttributes([.font: NSFont.boldSystemFont(ofSize: 24), .boldWriterStyle: WriterStyle.heading1.rawValue], range: NSRange(location: 0, length: 17))
