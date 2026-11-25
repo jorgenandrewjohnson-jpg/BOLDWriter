@@ -56,6 +56,24 @@ final class DOCXWritableDocumentTests:
         )
     }
 
+    func testImportedFormatsCannotOverwriteTheirSourceWithANativePackage() {
+        let document = BOLDWriterDocument()
+        for type in [UTType.rtfd, .rtf, .pdf, .plainText, .html] {
+            XCTAssertThrowsError(try document.snapshot(contentType: type)) { error in
+                XCTAssertTrue(
+                    error.localizedDescription.contains("cannot be saved in place"),
+                    "Expected a safe-save explanation for \(type): \(error)"
+                )
+            }
+        }
+    }
+
+    func testSupportedFormatsStillProduceSnapshots() throws {
+        let document = BOLDWriterDocument()
+        XCTAssertNotNil(try document.snapshot(contentType: .boldWriterDocument))
+        XCTAssertNotNil(try document.snapshot(contentType: .docx))
+    }
+
     func testNativeFormatRemainsWritable() {
         XCTAssertTrue(
             BOLDWriterDocument
