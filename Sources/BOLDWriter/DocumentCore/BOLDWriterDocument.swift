@@ -284,6 +284,22 @@ final class BOLDWriterDocument: ReferenceFileDocument {
             return
         }
 
+        // A native package must never fall through to the generic RTF importer.
+        // Missing or non-file metadata on current packages is corruption, not
+        // an invitation to silently discard the author's document settings.
+        if contentType == .boldWriterDocument {
+            guard wrapper.isDirectory, let children = wrapper.fileWrappers,
+                  children["content.rtfd"] != nil || children["content.rtf"]?.isRegularFile == true else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            if children["content.rtfd"] != nil || children["metadata.json"] != nil {
+                guard let metadataWrapper = children["metadata.json"], metadataWrapper.isRegularFile,
+                      metadataWrapper.regularFileContents != nil else {
+                    throw CocoaError(.fileReadCorruptFile)
+                }
+            }
+        }
+
         if wrapper.isDirectory, let children = wrapper.fileWrappers,
            let contentWrapper = children["content.rtfd"] {
             guard let decoded = NSAttributedString(rtfdFileWrapper: contentWrapper, documentAttributes: nil) else {

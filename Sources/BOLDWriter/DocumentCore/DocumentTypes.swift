@@ -883,22 +883,35 @@ extension DocumentMetadata {
         to newText: String
     ) {
 
-        if var images = floatingImages, oldText != newText {
-            let old = oldText as NSString
-            let new = newText as NSString
-            let limit = min(old.length, new.length)
-            var prefix = 0
-            while prefix < limit && old.character(at: prefix) == new.character(at: prefix) { prefix += 1 }
-            var suffix = 0
-            while suffix < old.length - prefix && suffix < new.length - prefix
-                && old.character(at: old.length - suffix - 1) == new.character(at: new.length - suffix - 1) { suffix += 1 }
-            let oldEnd = old.length - suffix
-            let delta = new.length - old.length
+        // Most keystrokes need no anchor work in unannotated manuscripts.
+        // For annotated manuscripts, find the shared UTF-16 boundaries once
+        // instead of scanning the entire book separately for each anchor type.
+        guard !(floatingImages ?? []).isEmpty || sections != nil
+            || !comments.isEmpty || !bookmarks.isEmpty else { return }
+        let old = oldText as NSString
+        let new = newText as NSString
+        let oldLength = old.length
+        let newLength = new.length
+        let limit = min(oldLength, newLength)
+        var prefix = 0
+        while prefix < limit && old.character(at: prefix) == new.character(at: prefix) {
+            prefix += 1
+        }
+        guard prefix != oldLength || prefix != newLength else { return }
+        var oldEnd = oldLength
+        var newEnd = newLength
+        while oldEnd > prefix && newEnd > prefix
+            && old.character(at: oldEnd - 1) == new.character(at: newEnd - 1) {
+            oldEnd -= 1
+            newEnd -= 1
+        }
+        let delta = newLength - oldLength
+
+        if var images = floatingImages {
             for index in images.indices where images[index].anchor == .paragraph || images[index].anchor == .character {
                 let location = images[index].anchorLocation
                 if location >= prefix && location < oldEnd {
-                    // Deterministic deletion/replacement fallback: retain the
-                    // physical position as a page anchor if the target vanished.
+                    // Retain the physical position if the target vanished.
                     images[index].anchor = .page
                     images[index].anchorLocation = -1
                 } else if location >= oldEnd {
@@ -908,91 +921,8 @@ extension DocumentMetadata {
             floatingImages = images
         }
 
-        // SECTION-ANCHOR-REBASING
-        //
-        // Word section boundaries live as UTF-16 text anchors.
-        // Keep them synchronized with ordinary BOLD Writer edits
-        // using the same single-replacement interpretation used
-        // for the document's other text-bound metadata.
-        if let currentSections =
-            sections {
-
-            let sectionOldText =
-                oldText
-                    as NSString
-
-            let sectionNewText =
-                newText
-                    as NSString
-
-            let sectionOldLength =
-                sectionOldText.length
-
-            let sectionNewLength =
-                sectionNewText.length
-
-            let sectionSharedLimit =
-                min(
-                    sectionOldLength,
-                    sectionNewLength
-                )
-
-            var sectionPrefix =
-                0
-
-            while sectionPrefix
-                < sectionSharedLimit,
-                  sectionOldText.character(
-                    at:
-                        sectionPrefix
-                  )
-                    == sectionNewText.character(
-                        at:
-                            sectionPrefix
-                    ) {
-
-                sectionPrefix +=
-                    1
-            }
-
-            var sectionSuffix =
-                0
-
-            while sectionSuffix
-                < sectionOldLength
-                    - sectionPrefix,
-                  sectionSuffix
-                    < sectionNewLength
-                        - sectionPrefix,
-                  sectionOldText.character(
-                    at:
-                        sectionOldLength
-                        - sectionSuffix
-                        - 1
-                  )
-                    == sectionNewText.character(
-                        at:
-                            sectionNewLength
-                            - sectionSuffix
-                            - 1
-                    ) {
-
-                sectionSuffix +=
-                    1
-            }
-
-            let sectionOldChangedEnd =
-                sectionOldLength
-                - sectionSuffix
-
-            let sectionNewChangedEnd =
-                sectionNewLength
-                - sectionSuffix
-
-            let sectionDelta =
-                sectionNewLength
-                - sectionOldLength
-
+        // Section anchors retain their original boundary affinity.
+        if let currentSections = sections {
             let rebasedSections =
                 currentSections.map {
                     section
@@ -1004,14 +934,14 @@ extension DocumentMetadata {
                                 0,
                                 section.location
                             ),
-                            sectionOldLength
+                            oldLength
                         )
 
                     let newLocation:
                         Int
 
                     if oldLocation
-                        <= sectionPrefix {
+                        <= prefix {
 
                         // An insertion exactly at a section boundary
                         // belongs to that following section, so the
@@ -1020,25 +950,26 @@ extension DocumentMetadata {
                             oldLocation
 
                     } else if oldLocation
-                        >= sectionOldChangedEnd {
+                        >= oldEnd {
 
                         newLocation =
                             oldLocation
-                            + sectionDelta
+                            + delta
 
                     } else {
 
                         // A boundary consumed by replacement/deletion
                         // survives at the end of the replacement.
                         newLocation =
-                            sectionNewChangedEnd
+                            newEnd
                     }
 
                     return DocumentSection(
                         location:
                             newLocation,
                         page:
-                            section.page
+                            section.page,
+                        breakType: section.breakType
                     )
                 }
 
@@ -1046,7 +977,7 @@ extension DocumentMetadata {
                 DocumentSection.normalized(
                     rebasedSections,
                     textLength:
-                        sectionNewLength,
+                        newLength,
                     fallbackPage:
                         page
                 )
@@ -1057,57 +988,6 @@ extension DocumentMetadata {
                 || !bookmarks.isEmpty
         else {
             return
-        }
-
-        let old =
-            oldText as NSString
-
-        let new =
-            newText as NSString
-
-        let sharedLength =
-            min(
-                old.length,
-                new.length
-            )
-
-        var prefix = 0
-
-        while prefix < sharedLength,
-              old.character(
-                at:
-                    prefix
-              )
-                == new.character(
-                    at:
-                        prefix
-                ) {
-            prefix += 1
-        }
-
-        if prefix == old.length,
-           prefix == new.length {
-            return
-        }
-
-        var oldEnd =
-            old.length
-
-        var newEnd =
-            new.length
-
-        while oldEnd > prefix,
-              newEnd > prefix,
-              old.character(
-                at:
-                    oldEnd - 1
-              )
-                == new.character(
-                    at:
-                        newEnd - 1
-                ) {
-            oldEnd -= 1
-            newEnd -= 1
         }
 
         // Normalize stale or malformed metadata before applying
