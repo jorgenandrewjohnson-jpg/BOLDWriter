@@ -98,6 +98,18 @@ final class BOLDWriterDocument: ReferenceFileDocument {
         ]
     }
 
+    // SwiftUI may request a save using an imported file's original type.
+    // Never return a native .boldwriter package for an RTFD, PDF, or other
+    // unsupported destination: that could replace the user's source file
+    // with an unreadable package bearing the old extension.
+    static func validateWritableContentType(_ contentType: UTType) throws {
+        guard writableContentTypes.contains(contentType) else {
+            throw WriterError.message(
+                "This imported format cannot be saved in place. Save a copy as a BOLD Writer (.boldwriter) document or export to Word (.docx) instead."
+            )
+        }
+    }
+
     typealias Snapshot = WriterDocumentSnapshot
 
     @Published var text: NSAttributedString
@@ -434,6 +446,7 @@ final class BOLDWriterDocument: ReferenceFileDocument {
     }
 
     func snapshot(contentType: UTType) throws -> WriterDocumentSnapshot {
+        try Self.validateWritableContentType(contentType)
         var current = metadata
         current.modifiedAt = Date()
         current.styleRuns = Self.captureStyleRuns(in: text)
@@ -469,6 +482,7 @@ final class BOLDWriterDocument: ReferenceFileDocument {
         snapshot: WriterDocumentSnapshot,
         configuration: WriteConfiguration
     ) throws -> FileWrapper {
+        try Self.validateWritableContentType(configuration.contentType)
         if configuration.contentType == .docx {
             let data =
                 try DOCXExporter.data(
